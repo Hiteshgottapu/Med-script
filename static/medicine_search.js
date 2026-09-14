@@ -1,0 +1,870 @@
+/**
+ * MedScript Medicine Search & Commerce Client Controller
+ */
+
+// State Management
+let allMedicines = [];
+let currentQuery = (typeof window.MEDSCRIPT_INITIAL_QUERY !== "undefined") ? window.MEDSCRIPT_INITIAL_QUERY : "";
+let autocompleteDebounceTimer = null;
+let lastSearchAbortCtrl = null;
+let currentCart = { items: [], total_items: 0, subtotal: 0, delivery_fee: 0, total_amount: 0 };
+
+// DOM Elements
+const searchInput = document.getElementById('searchInput');
+const clearSearchBtn = document.getElementById('clearSearchBtn');
+const submitSearchBtn = document.getElementById('submitSearchBtn');
+const autocompleteDropdown = document.getElementById('autocompleteDropdown');
+const filterToolbar = document.getElementById('filterToolbar');
+const resultsCountLabel = document.getElementById('resultsCountLabel');
+const freshnessBadge = document.getElementById('freshnessBadge');
+const freshnessText = document.getElementById('freshnessText');
+const partialBanner = document.getElementById('partialBanner');
+
+const initialState = document.getElementById('initialState');
+const loadingState = document.getElementById('loadingState');
+const resultsGrid = document.getElementById('resultsGrid');
+const emptyState = document.getElementById('emptyState');
+const errorState = document.getElementById('errorState');
+const emptyQueryText = document.getElementById('emptyQueryText');
+
+// Cart & Modal Elements
+const cartBackdrop = document.getElementById('cartBackdrop');
+const cartDrawer = document.getElementById('cartDrawer');
+const cartCountBadge = document.getElementById('cartCountBadge');
+const cartItemsList = document.getElementById('cartItemsList');
+const cartSubtotalVal = document.getElementById('cartSubtotalVal');
+const cartDeliveryFeeVal = document.getElementById('cartDeliveryFeeVal');
+const cartTaxVal = document.getElementById('cartTaxVal');
+const cartTotalVal = document.getElementById('cartTotalVal');
+const freeShippingText = document.getElementById('freeShippingText');
+const proceedCheckoutBtn = document.getElementById('proceedCheckoutBtn');
+
+const productDetailsModal = document.getElementById('productDetailsModal');
+const productDetailsBody = document.getElementById('productDetailsBody');
+const checkoutModal = document.getElementById('checkoutModal');
+
+// ============================================================
+// CART API INTEGRATION
+// ============================================================
+async function fetchCart() {
+  try {
+    const res = await fetch('/api/cart');
+    const data = await res.json();
+    if (data.success && data.cart) {
+      currentCart = data.cart;
+      updateCartUI();
+    }
+  } catch (e) {
+    console.debug('Failed to fetch cart:', e);
+  }
+}
+
+function updateCartUI() {
+  cartCountBadge.textContent = currentCart.total_items;
+  cartSubtotalVal.textContent = `₹${currentCart.subtotal.toFixed(2)}`;
+  cartDeliveryFeeVal.textContent = currentCart.delivery_fee === 0 ? 'FREE' : `₹${currentCart.delivery_fee.toFixed(2)}`;
+  cartTaxVal.textContent = `₹${currentCart.tax_amount.toFixed(2)}`;
+  cartTotalVal.textContent = `₹${currentCart.total_amount.toFixed(2)}`;
+
+  if (currentCart.amount_needed_for_free_delivery <= 0) {
+    freeShippingText.innerHTML = '<strong>Unlocked!</strong> You have qualified for FREE Standard Delivery.';
+  } else {
+    freeShippingText.innerHTML = `Add <strong>₹${currentCart.amount_needed_for_free_delivery.toFixed(2)}</strong> more to get <strong>FREE Standard Delivery</strong>.`;
+  }
+
+  // Update Prescription Notice in Cart Drawer
+  const rxNotice = document.getElementById('cartRxNotice');
+  if (rxNotice) {
+    rxNotice.style.display = currentCart.requires_prescription ? 'flex' : 'none';
+  }
+
+  // Render items
+  cartItemsList.innerHTML = '';
+  if (!currentCart.items || currentCart.items.length === 0) {
+    cartItemsList.innerHTML = `
+      <div style="text-align: center; padding: 48px 0; color: #94a3b8;">
+        <i class="fas fa-shopping-bag" style="font-size: 32px; margin-bottom: 12px; color: #cbd5e1;"></i>
+        <div style="font-weight: 600; color: #475569;">Your cart is empty</div>
+        <div style="font-size: 12px; margin-top: 4px;">Search and add verified medicines to proceed.</div>
+      </div>
+    `;
+    proceedCheckoutBtn.disabled = true;
+    proceedCheckoutBtn.style.opacity = '0.5';
+    proceedCheckoutBtn.style.cursor = 'not-allowed';
+    return;
+  }
+
+  proceedCheckoutBtn.disabled = false;
+  proceedCheckoutBtn.style.opacity = '1';
+  proceedCheckoutBtn.style.cursor = 'pointer';
+
+  currentCart.items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'cart-item-card';
+    const rxTag = item.prescription_required
+      ? `<div style="color: #b91c1c; font-size: 11px; font-weight: 700; margin-top: 2px;"><i class="fas fa-file-prescription"></i> Rx Required</div>`
+      : '';
+    div.innerHTML = `
+      <div style="flex: 1;">
+        <div class="cart-item-name">${escapeHtml(item.name)}</div>
+        <div class="cart-item-meta">
+          ${item.strength ? escapeHtml(item.strength) + ' • ' : ''}
+          ${item.dosage_form ? escapeHtml(item.dosage_form) : ''}
+        </div>
+        ${rxTag}
+        <div class="cart-item-price">₹${parseFloat(item.price).toFixed(2)}</div>
+        ${item.source_url ? `
+          <div style="margin-top: 4px;">
+            <a href="${escapeHtml(item.source_url)}" target="_blank" rel="noopener noreferrer" style="color: #059669; font-size: 11px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+              <i class="fas fa-external-link-alt"></i> Buy on ${escapeHtml(item.source)} (Direct)
+            </a>
+          </div>
+        ` : ''}
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+        <div class="cart-stepper">
+          <button type="button" onclick="changeQuantity('${item.id}', ${item.quantity - 1})">-</button>
+          <span>${item.quantity}</span>
+          <button type="button" onclick="changeQuantity('${item.id}', ${item.quantity + 1})">+</button>
+        </div>
+        <button type="button" onclick="changeQuantity('${item.id}', 0)" style="background: none; border: none; color: #dc2626; font-size: 11px; cursor: pointer;">
+          <i class="fas fa-trash"></i> Remove
+        </button>
+      </div>
+    `;
+    cartItemsList.appendChild(div);
+  });
+}
+
+async function addToCart(med) {
+  try {
+    const payload = {
+      id: med.id,
+      name: med.name,
+      price: med.price,
+      quantity: 1,
+      strength: med.strength,
+      dosage_form: med.dosage_form,
+      manufacturer: med.manufacturer,
+      pack_size: med.pack_size,
+      source: med.source,
+      source_url: med.source_url,
+      image_url: med.image_url
+    };
+
+    const res = await fetch('/api/cart/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success && data.cart) {
+      currentCart = data.cart;
+      updateCartUI();
+      openCartDrawer();
+    }
+  } catch (e) {
+    console.error('Failed to add to cart:', e);
+  }
+}
+
+async function changeQuantity(itemId, newQty) {
+  try {
+    const res = await fetch('/api/cart/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ item_id: itemId, quantity: newQty })
+    });
+    const data = await res.json();
+    if (data.success && data.cart) {
+      currentCart = data.cart;
+      updateCartUI();
+    }
+  } catch (e) {
+    console.error('Failed to update cart:', e);
+  }
+}
+
+function openCartDrawer() {
+  cartBackdrop.classList.add('active');
+  cartDrawer.classList.add('active');
+}
+
+function closeCartDrawer() {
+  cartBackdrop.classList.remove('active');
+  cartDrawer.classList.remove('active');
+}
+
+// ============================================================
+// PRODUCT DETAILS MODAL
+// ============================================================
+function showProductDetails(index) {
+  const med = allMedicines[index];
+  if (!med) return;
+
+  let comparisonRows = '';
+  if (med.other_sources && med.other_sources.length > 0) {
+    med.other_sources.forEach(other => {
+      let otherPrice = other.price ? `₹${parseFloat(other.price).toFixed(2)}` : 'N/A';
+      comparisonRows += `
+        <tr>
+          <td><strong>${escapeHtml(other.source)}</strong></td>
+          <td>${otherPrice}</td>
+          <td><span class="badge ${other.availability === 'In Stock' ? 'badge-success' : 'badge-secondary'}">${escapeHtml(other.availability)}</span></td>
+          <td>
+            ${other.source_url ? `<a href="${escapeHtml(other.source_url)}" target="_blank" rel="noopener noreferrer" class="btn-buy-external-card" style="padding: 4px 10px; font-size: 11px;"><i class="fas fa-external-link-alt"></i> Buy on ${escapeHtml(other.source)}</a>` : '—'}
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  let lowestBadge = med.is_lowest_price
+    ? `<div style="background: #0d9488; color: #ffffff; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 14px;">
+        <i class="fas fa-tags"></i> Lowest price among available sources
+       </div>`
+    : '';
+
+  let rxStatusBadge = med.prescription_required
+    ? `<span class="badge-rx" style="font-size: 12px; padding: 4px 10px;"><i class="fas fa-file-prescription"></i> Schedule H — Doctor's Prescription Mandatory</span>`
+    : `<span class="badge-otc" style="font-size: 12px; padding: 4px 10px;"><i class="fas fa-capsules"></i> Over The Counter (OTC) — No Prescription Required</span>`;
+
+  let buyOnSourceBtn = med.source_url
+    ? `<a href="${escapeHtml(med.source_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="background: #059669; border: none; color: #ffffff !important; font-weight: 700; padding: 10px 20px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);">
+        <i class="fas fa-external-link-alt"></i> Buy on ${escapeHtml(med.source)} (Official Store)
+       </a>`
+    : '';
+
+  let addToCartBtn = (med.price && med.price > 0)
+    ? `<button type="button" class="btn btn-secondary" onclick="addToCart(allMedicines[${index}]); closeProductDetails();" style="font-weight: 600; padding: 10px 18px; border-radius: 8px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1;">
+        <i class="fas fa-cart-plus"></i> Add to MedScript Order (₹${parseFloat(med.price).toFixed(2)})
+       </button>`
+    : `<div style="font-size: 12px; color: #64748b; font-style: italic;">Clinical reference record. Retail purchasing available on pharmacy sources.</div>`;
+
+  productDetailsBody.innerHTML = `
+    <div style="margin-bottom: 16px;">
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px;">
+        ${lowestBadge}
+        ${rxStatusBadge}
+      </div>
+      <h3 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">${escapeHtml(med.name)}</h3>
+      ${med.generic_name ? `<div style="font-size: 13px; color: #64748b;">Generic Molecule: <strong style="color: #334155;">${escapeHtml(med.generic_name)}</strong></div>` : ''}
+      <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+        Source: <strong style="color: #0f766e;">${escapeHtml(med.source)}</strong> • Last Verified: <strong>${escapeHtml(med.last_updated ? med.last_updated.substring(0, 19).replace('T', ' ') : 'Live')}</strong>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 18px; font-size: 13px;">
+      <div><strong>Formulation:</strong> ${escapeHtml(med.dosage_form || 'Standard')}</div>
+      <div><strong>Strength:</strong> ${escapeHtml(med.strength || 'Standard')}</div>
+      <div><strong>Manufacturer:</strong> ${escapeHtml(med.manufacturer || 'Verified')}</div>
+      <div><strong>Packaging:</strong> ${escapeHtml(med.pack_size || 'Standard pack')}</div>
+      <div><strong>Availability:</strong> <span class="badge ${med.availability === 'In Stock' ? 'badge-success' : 'badge-secondary'}">${escapeHtml(med.availability)}</span></div>
+      <div><strong>Primary Source:</strong> ${escapeHtml(med.source)}</div>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+      <h4 style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Multi-Source Price & Availability Comparison</h4>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Source Platform</th>
+            <th>Selling Price</th>
+            <th>Stock Status</th>
+            <th>Direct Pharmacy Checkout</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background: #f0fdfa;">
+            <td><strong>${escapeHtml(med.source)} (Active)</strong></td>
+            <td><strong>₹${med.price ? parseFloat(med.price).toFixed(2) : 'N/A'}</strong></td>
+            <td><span class="badge ${med.availability === 'In Stock' ? 'badge-success' : 'badge-secondary'}">${escapeHtml(med.availability)}</span></td>
+            <td>${buyOnSourceBtn}</td>
+          </tr>
+          ${comparisonRows}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid #e2e8f0;">
+      ${buyOnSourceBtn}
+      ${addToCartBtn}
+    </div>
+  `;
+
+  productDetailsModal.classList.add('active');
+}
+
+function closeProductDetails() {
+  productDetailsModal.classList.remove('active');
+}
+
+// ============================================================
+// CHECKOUT MODAL & ORDER SUBMISSION
+// ============================================================
+async function openCheckoutModal() {
+  if (!currentCart.items || currentCart.items.length === 0) {
+    alert('Your cart is empty. Add verified medicines before proceeding to checkout.');
+    return;
+  }
+
+  // Pre-checkout Live Revalidation
+  proceedCheckoutBtn.disabled = true;
+  proceedCheckoutBtn.innerHTML = '<span class="animate-spin" style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.4);border-top-color:white;border-radius:50%;"></span> Revalidating Cart...';
+
+  try {
+    const revalRes = await fetch('/api/cart/revalidate', { method: 'POST' });
+    const reval = await revalRes.json();
+    if (reval.success && reval.cart) {
+      currentCart = reval.cart;
+      updateCartUI();
+    }
+    if (!reval.valid && reval.changes && reval.changes.length > 0) {
+      const msgs = reval.changes.map(c => `• ${c.message}`).join('\n');
+      alert(`Cart items updated with current real-time data:\n\n${msgs}\n\nPlease review your updated cart.`);
+      proceedCheckoutBtn.disabled = false;
+      proceedCheckoutBtn.innerHTML = '<span>Proceed to Delivery & Checkout</span> <i class="fas fa-arrow-right"></i>';
+      return;
+    }
+  } catch (e) {
+    console.debug('Cart revalidation skipped:', e);
+  }
+
+  proceedCheckoutBtn.disabled = false;
+  proceedCheckoutBtn.innerHTML = '<span>Proceed to Delivery & Checkout</span> <i class="fas fa-arrow-right"></i>';
+
+  closeCartDrawer();
+
+  // Show/Hide prescription section
+  const rxSection = document.getElementById('checkoutRxSection');
+  if (rxSection) {
+    rxSection.style.display = currentCart.requires_prescription ? 'block' : 'none';
+  }
+
+  checkoutModal.classList.add('active');
+}
+
+function closeCheckoutModal() {
+  checkoutModal.classList.remove('active');
+}
+
+async function uploadPrescriptionFile() {
+  const fileInput = document.getElementById('prescriptionFileInput');
+  const statusEl = document.getElementById('rxUploadStatus');
+  const btn = document.getElementById('uploadRxBtn');
+
+  if (!fileInput.files || !fileInput.files[0]) {
+    alert('Please choose a prescription file (.pdf, .jpg, .png) to upload.');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('prescription_file', fileInput.files[0]);
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+  statusEl.style.display = 'block';
+  statusEl.style.color = '#d97706';
+  statusEl.textContent = 'Validating and uploading prescription securely...';
+
+  try {
+    const res = await fetch('/api/prescription/upload', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      document.getElementById('attachedPrescriptionId').value = data.prescription_id;
+      document.getElementById('attachedPrescriptionUrl').value = data.file_url;
+      statusEl.style.color = '#16a34a';
+      statusEl.innerHTML = `<i class="fas fa-check-circle"></i> Prescription Verified & Attached: ${escapeHtml(data.filename)}`;
+      btn.innerHTML = '<i class="fas fa-check"></i> Attached';
+    } else {
+      statusEl.style.color = '#dc2626';
+      statusEl.textContent = data.error || 'Prescription upload failed. Please try again.';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-upload"></i> Upload & Attach';
+    }
+  } catch (err) {
+    console.error('Prescription upload error:', err);
+    statusEl.style.color = '#dc2626';
+    statusEl.textContent = 'Upload failed due to network error.';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-upload"></i> Upload & Attach';
+  }
+}
+
+async function handleCheckoutSubmit(e) {
+  e.preventDefault();
+  const btn = document.getElementById('placeOrderSubmitBtn');
+
+  const rxId = document.getElementById('attachedPrescriptionId')?.value;
+  const rxUrl = document.getElementById('attachedPrescriptionUrl')?.value;
+
+  if (currentCart.requires_prescription && (!rxId && !rxUrl)) {
+    alert('A doctor\'s prescription is required for Schedule H medicines in your cart. Please upload or attach your prescription before placing the order.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="animate-spin" style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.4);border-top-color:white;border-radius:50%;"></span> Placing Order...';
+
+  const shipping = {
+    full_name: document.getElementById('shipName').value.trim(),
+    phone: document.getElementById('shipPhone').value.trim(),
+    street_address: document.getElementById('shipStreet').value.trim(),
+    city: document.getElementById('shipCity').value.trim(),
+    state: document.getElementById('shipState').value.trim(),
+    pincode: document.getElementById('shipPincode').value.trim()
+  };
+
+  const payment = document.querySelector('input[name="payMethod"]:checked').value;
+  const idempotencyKey = 'idemp_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+
+  try {
+    const res = await fetch('/api/checkout/order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        shipping_address: shipping,
+        payment_method: payment,
+        prescription_id: rxId || null,
+        prescription_file_url: rxUrl || null,
+        idempotency_key: idempotencyKey
+      })
+    });
+    const data = await res.json();
+    if (data.success && data.redirect_url) {
+      window.location.href = data.redirect_url;
+    } else {
+      alert(data.error || 'Unable to place order. Please try again.');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-lock"></i> <span>Confirm & Place Medicine Order</span>';
+    }
+  } catch (err) {
+    console.error('Checkout failed:', err);
+    alert('An error occurred during checkout. Please check your network and try again.');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-lock"></i> <span>Confirm & Place Medicine Order</span>';
+  }
+}
+
+// ============================================================
+// SEARCH & AUTOCOMPLETE ENGINE
+// ============================================================
+searchInput.addEventListener('input', (e) => {
+  const q = e.target.value.trim();
+  clearSearchBtn.style.display = q ? 'block' : 'none';
+
+  clearTimeout(autocompleteDebounceTimer);
+  if (q.length < 2) {
+    closeAutocomplete();
+    return;
+  }
+
+  autocompleteDebounceTimer = setTimeout(() => {
+    fetchAutocompleteSuggestions(q);
+  }, 300);
+});
+
+searchInput.addEventListener('keydown', (e) => {
+  const items = autocompleteDropdown.querySelectorAll('.autocomplete-item');
+  if (!items.length) return;
+
+  let activeIdx = Array.from(items).findIndex(el => el.classList.contains('active'));
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (activeIdx < items.length - 1) activeIdx++;
+    else activeIdx = 0;
+    highlightItem(items, activeIdx);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (activeIdx > 0) activeIdx--;
+    else activeIdx = items.length - 1;
+    highlightItem(items, activeIdx);
+  } else if (e.key === 'Enter') {
+    if (activeIdx >= 0 && items[activeIdx]) {
+      e.preventDefault();
+      items[activeIdx].click();
+    }
+  } else if (e.key === 'Escape') {
+    closeAutocomplete();
+  }
+});
+
+function highlightItem(items, idx) {
+  items.forEach(el => el.classList.remove('active'));
+  if (idx >= 0 && items[idx]) {
+    items[idx].classList.add('active');
+    items[idx].scrollIntoView({ block: 'nearest' });
+  }
+}
+
+async function fetchAutocompleteSuggestions(q) {
+  try {
+    const res = await fetch(`/api/medicines/suggest?q=${encodeURIComponent(q)}`);
+    if (!res.ok) return;
+    const suggestions = await res.json();
+    renderAutocomplete(suggestions);
+  } catch (err) {
+    console.debug('Autocomplete fetch error:', err);
+  }
+}
+
+function renderAutocomplete(suggestions) {
+  if (!suggestions || !suggestions.length) {
+    closeAutocomplete();
+    return;
+  }
+
+  autocompleteDropdown.innerHTML = '';
+  suggestions.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'autocomplete-item';
+    
+    let priceHtml = item.price ? `₹${parseFloat(item.price).toFixed(2)}` : '';
+    let formHtml = item.dosage_form ? `<span class="autocomplete-badge">${escapeHtml(item.dosage_form)}</span>` : '';
+    let strengthHtml = item.strength ? `<span class="autocomplete-badge">${escapeHtml(item.strength)}</span>` : '';
+
+    div.innerHTML = `
+      <div class="autocomplete-main">
+        <i class="fas fa-pills" style="color: var(--accent, #0d9488); font-size: 13px;"></i>
+        <span>${escapeHtml(item.name)}</span>
+        ${formHtml}
+        ${strengthHtml}
+      </div>
+      <div class="autocomplete-price">${priceHtml}</div>
+    `;
+
+    div.addEventListener('click', () => {
+      searchInput.value = item.name;
+      closeAutocomplete();
+      executeSearch(item.name);
+    });
+
+    autocompleteDropdown.appendChild(div);
+  });
+
+  autocompleteDropdown.style.display = 'block';
+}
+
+function closeAutocomplete() {
+  autocompleteDropdown.innerHTML = '';
+  autocompleteDropdown.style.display = 'none';
+}
+
+document.addEventListener('click', (e) => {
+  if (!searchInput.contains(e.target) && !autocompleteDropdown.contains(e.target)) {
+    closeAutocomplete();
+  }
+});
+
+function clearSearch() {
+  searchInput.value = '';
+  clearSearchBtn.style.display = 'none';
+  closeAutocomplete();
+  searchInput.focus();
+}
+
+function handleFormSubmit(e) {
+  e.preventDefault();
+  closeAutocomplete();
+  const q = searchInput.value.trim();
+  if (q) executeSearch(q);
+}
+
+function triggerSearch(q) {
+  searchInput.value = q;
+  clearSearchBtn.style.display = 'block';
+  closeAutocomplete();
+  executeSearch(q);
+}
+
+function retrySearch() {
+  if (currentQuery) executeSearch(currentQuery);
+}
+
+async function executeSearch(query) {
+  if (!query) return;
+  currentQuery = query;
+
+  const newUrl = `${window.location.pathname}?q=${encodeURIComponent(query)}`;
+  window.history.pushState({ path: newUrl }, '', newUrl);
+
+  initialState.style.display = 'none';
+  resultsGrid.style.display = 'none';
+  emptyState.style.display = 'none';
+  errorState.style.display = 'none';
+  filterToolbar.style.display = 'none';
+  partialBanner.style.display = 'none';
+  loadingState.style.display = 'grid';
+  submitSearchBtn.disabled = true;
+  submitSearchBtn.innerHTML = '<span class="animate-spin" style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.4);border-top-color:white;border-radius:50%;"></span> Searching...';
+
+  if (lastSearchAbortCtrl) lastSearchAbortCtrl.abort();
+  lastSearchAbortCtrl = new AbortController();
+
+  try {
+    const res = await fetch(`/api/medicines/search?q=${encodeURIComponent(query)}`, {
+      signal: lastSearchAbortCtrl.signal
+    });
+
+    if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+
+    const data = await res.json();
+    allMedicines = data.results || [];
+
+    loadingState.style.display = 'none';
+    submitSearchBtn.disabled = false;
+    submitSearchBtn.innerHTML = '<i class="fas fa-search"></i> <span>Search</span>';
+
+    if (allMedicines.length === 0) {
+      emptyQueryText.textContent = query;
+      emptyState.style.display = 'block';
+      return;
+    }
+
+    filterToolbar.style.display = 'flex';
+    resultsCountLabel.innerHTML = `Found <strong>${allMedicines.length}</strong> medicines for "<strong>${escapeHtml(query)}</strong>"`;
+
+    if (data.cached_at) {
+      freshnessText.textContent = data.cached_at;
+      freshnessBadge.style.display = 'inline-flex';
+    } else {
+      freshnessBadge.style.display = 'none';
+    }
+
+    if (data.sources_failed && data.sources_failed.length > 0) {
+      partialBanner.style.display = 'flex';
+    } else {
+      partialBanner.style.display = 'none';
+    }
+
+    populateFormFilter(allMedicines);
+    applyFilters();
+
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    console.error('Search request failed:', err);
+    loadingState.style.display = 'none';
+    submitSearchBtn.disabled = false;
+    submitSearchBtn.innerHTML = '<i class="fas fa-search"></i> <span>Search</span>';
+    errorState.style.display = 'block';
+  }
+}
+
+function populateFormFilter(meds) {
+  const formFilter = document.getElementById('formFilter');
+  const existingVal = formFilter.value;
+  const forms = new Set();
+
+  meds.forEach(m => {
+    if (m.dosage_form) forms.add(m.dosage_form);
+  });
+
+  formFilter.innerHTML = '<option value="all">All Forms</option>';
+  Array.from(forms).sort().forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f;
+    opt.textContent = f;
+    formFilter.appendChild(opt);
+  });
+
+  if (forms.has(existingVal)) formFilter.value = existingVal;
+}
+
+function applyFilters() {
+  const selectedForm = document.getElementById('formFilter').value;
+  const selectedAvail = document.getElementById('availFilter').value;
+  const selectedSource = document.getElementById('sourceFilter').value;
+  const selectedSort = document.getElementById('sortFilter').value;
+
+  let filtered = allMedicines.filter(m => {
+    if (selectedForm !== 'all' && m.dosage_form !== selectedForm) return false;
+    if (selectedAvail === 'In Stock' && m.availability !== 'In Stock') return false;
+    if (selectedAvail === 'Out of Stock' && m.availability !== 'Out of Stock') return false;
+    if (selectedSource !== 'all') {
+      if (!m.source || !m.source.toLowerCase().includes(selectedSource.toLowerCase())) return false;
+    }
+    return true;
+  });
+
+  if (selectedSort === 'price_asc') {
+    filtered.sort((a, b) => (a.price ?? 999999) - (b.price ?? 999999));
+  } else if (selectedSort === 'price_desc') {
+    filtered.sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
+  } else if (selectedSort === 'name_asc') {
+    filtered.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  renderMedicineCards(filtered);
+}
+
+function renderMedicineCards(medicines) {
+  resultsGrid.innerHTML = '';
+
+  if (medicines.length === 0) {
+    resultsGrid.innerHTML = `
+      <div style="grid-column: 1 / -1; padding: 40px 20px; text-align: center; color: #64748b; background: #ffffff; border-radius: 12px; border: 1px dashed #cbd5e1;">
+        <i class="fas fa-filter" style="font-size: 24px; color: #94a3b8; margin-bottom: 8px;"></i>
+        <div style="font-weight: 600;">No medicines match your selected filters.</div>
+        <button class="btn btn-secondary btn-sm" style="margin-top: 10px;" onclick="resetFilters()">Reset Filters</button>
+      </div>
+    `;
+    resultsGrid.style.display = 'grid';
+    return;
+  }
+
+  medicines.forEach(med => {
+    const originalIndex = allMedicines.indexOf(med);
+    const card = document.createElement('div');
+    card.className = `med-card ${med.is_lowest_price ? 'lowest-price-highlight' : ''}`;
+
+    const formBadge = med.dosage_form ? `<span class="badge-form">${escapeHtml(med.dosage_form)}</span>` : '';
+    const strengthBadge = med.strength ? `<span class="badge-strength">${escapeHtml(med.strength)}</span>` : '';
+    const rxBadge = med.prescription_required
+      ? `<span class="badge-rx" title="Schedule H Drug — Mandates verified prescription"><i class="fas fa-prescription"></i> Rx Required</span>`
+      : `<span class="badge-otc" title="Over-the-Counter — No prescription required"><i class="fas fa-capsules"></i> OTC</span>`;
+
+    const genericHtml = med.generic_name
+      ? `<div class="med-generic"><i class="fas fa-dna" style="font-size: 11px;"></i> Generic: <span>${escapeHtml(med.generic_name)}</span></div>`
+      : '';
+
+    let mfgHtml = med.manufacturer ? `<div class="med-detail-item"><i class="fas fa-industry"></i> <span>${escapeHtml(med.manufacturer)}</span></div>` : '';
+    let packHtml = med.pack_size ? `<div class="med-detail-item"><i class="fas fa-box"></i> <span>${escapeHtml(med.pack_size)}</span></div>` : '';
+    let detailsHtml = (mfgHtml || packHtml) ? `<div class="med-details-row">${mfgHtml}${packHtml}</div>` : '';
+
+    let priceHtml = '';
+    if (med.price !== null && med.price !== undefined && med.price > 0) {
+      let mrpHtml = (med.mrp && med.mrp > med.price) ? `<span class="med-price-mrp">₹${parseFloat(med.mrp).toFixed(2)}</span>` : '';
+      let discountHtml = med.discount_percent ? `<span class="med-discount-tag">${med.discount_percent}% OFF</span>` : '';
+      priceHtml = `
+        <div>
+          <span class="med-price-val">₹${parseFloat(med.price).toFixed(2)}</span>
+          ${mrpHtml}
+          ${discountHtml}
+        </div>
+      `;
+    } else {
+      priceHtml = `<span class="med-no-price">Clinical Reference (Retail N/A)</span>`;
+    }
+
+    let stockClass = 'stock-unknown';
+    let stockIcon = 'fa-question-circle';
+    if (med.availability === 'In Stock') {
+      stockClass = 'stock-instock';
+      stockIcon = 'fa-check-circle';
+    } else if (med.availability === 'Out of Stock') {
+      stockClass = 'stock-outstock';
+      stockIcon = 'fa-times-circle';
+    }
+    const stockHtml = `<span class="med-stock-tag ${stockClass}"><i class="fas ${stockIcon}"></i> ${escapeHtml(med.availability)}</span>`;
+
+    let comparisonBoxHtml = '';
+    if (med.other_sources && med.other_sources.length > 0) {
+      let lowestBadgeHtml = med.is_lowest_price
+        ? `<span class="lowest-badge"><i class="fas fa-tags"></i> Lowest price among available sources</span>`
+        : `<span style="font-size: 11px; color: #64748b;">${med.equivalent_sources_count} sources available</span>`;
+
+      comparisonBoxHtml = `
+        <div class="med-comparison-box">
+          <div class="comparison-header">
+            <span>Price Comparison</span>
+            ${lowestBadgeHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    const sourceName = escapeHtml(med.source || 'Clinical Reference');
+
+    const imgHtml = med.image_url
+      ? `<img src="${escapeHtml(med.image_url)}" alt="${escapeHtml(med.name)}" style="width: 50px; height: 50px; object-fit: contain; border-radius: 8px; border: 1px solid #e2e8f0; background: #ffffff; padding: 2px; flex-shrink: 0;" onerror="this.style.display='none'" />`
+      : '';
+
+    card.innerHTML = `
+      <div onclick="showProductDetails(${originalIndex})">
+        <div class="med-card-top">
+          <div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 6px;">
+            ${imgHtml}
+            <div style="flex: 1; min-width: 0;">
+              <div class="med-title-row" style="margin-bottom: 4px;">
+                <div class="med-name">${escapeHtml(med.name)}</div>
+              </div>
+              <div class="med-badge-group" style="margin-bottom: 4px;">
+                ${rxBadge}
+                ${formBadge}
+                ${strengthBadge}
+              </div>
+              ${genericHtml}
+            </div>
+          </div>
+          ${detailsHtml}
+        </div>
+
+        <div class="med-price-section">
+          ${priceHtml}
+          ${stockHtml}
+        </div>
+
+        ${comparisonBoxHtml}
+      </div>
+
+      <div class="med-card-actions">
+        <div class="source-tag">
+          <i class="fas fa-store-alt" style="color: #0d9488;"></i>
+          <span>${sourceName}</span>
+        </div>
+        <div class="action-buttons-group">
+          ${med.source_url ? `
+            <a href="${escapeHtml(med.source_url)}" target="_blank" rel="noopener noreferrer" class="btn-buy-external-card" onclick="event.stopPropagation();" title="Buy directly on ${escapeHtml(med.source)} website">
+              <i class="fas fa-external-link-alt"></i> Buy on ${escapeHtml(med.source)}
+            </a>
+          ` : ''}
+          <button type="button" class="btn-details-mini" onclick="showProductDetails(${originalIndex})">
+            Details
+          </button>
+          ${med.price && med.price > 0 ? `
+            <button type="button" class="btn-add-cart-mini" onclick="addToCart(allMedicines[${originalIndex}])" title="Add to MedScript order">
+              <i class="fas fa-cart-plus"></i>
+            </button>
+          ` : ''}
+        </div>
+      </div>
+    `;
+
+    resultsGrid.appendChild(card);
+  });
+
+  resultsGrid.style.display = 'grid';
+}
+
+function resetFilters() {
+  document.getElementById('formFilter').value = 'all';
+  document.getElementById('availFilter').value = 'all';
+  document.getElementById('sourceFilter').value = 'all';
+  document.getElementById('sortFilter').value = 'relevance';
+  applyFilters();
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  fetchCart();
+  const urlParams = new URLSearchParams(window.location.search);
+  const q = urlParams.get('q') || urlParams.get('medicine_name') || currentQuery;
+  if (q && q.trim()) {
+    searchInput.value = q.trim();
+    clearSearchBtn.style.display = 'block';
+    executeSearch(q.trim());
+  }
+});

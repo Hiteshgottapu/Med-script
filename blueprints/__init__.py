@@ -1,0 +1,3 @@
+"""
+MedScript Application Blueprints
+"""
