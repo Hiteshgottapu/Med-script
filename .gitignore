@@ -16,12 +16,15 @@ ENV/
 
 # Flask session and runtime storage
 flask_session/
+test_flask_session/
+.pytest_cache/
 *.db
 *.db-shm
 *.db-wal
 *.sqlite
 *.sqlite3
 medscript_commerce.db
+test_medscript_commerce.db
 
 # User Uploads and generated files
 uploads/

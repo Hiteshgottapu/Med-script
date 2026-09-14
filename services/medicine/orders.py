@@ -14,6 +14,7 @@ from .models import CartItem, ShippingAddress, OrderRecord, ExternalOrder
 from .database import get_db_connection
 from .search import medicine_engine
 from .payments import check_idempotency_key, record_payment
+from .validators import is_prescription_required
 
 logger = logging.getLogger("medscript.medicine.orders")
 
@@ -127,7 +128,7 @@ class OrderService:
                     item_data.get("pack_size"),
                     item_data.get("source_url"),
                     item_data.get("image_url"),
-                    1 if item_data.get("prescription_required") else 0,
+                    1 if (item_data.get("prescription_required") or item_data.get("requires_prescription") or is_prescription_required(item_data.get("name") or "")) else 0,
                     now
                 ))
             conn.commit()
