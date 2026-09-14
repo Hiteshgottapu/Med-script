@@ -1,245 +1,229 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
+{% block title %}Consultations{% endblock %}
+{% block page_title %}Consultations{% endblock %}
 
-{% block title %}Doctor Consultant{% endblock %}
+{% block extra_css %}
+<style>
+.consult-layout { display: grid; grid-template-columns: 400px 1fr; gap: 0; min-height: calc(100vh - 64px); }
+.consult-form-panel { border-right: var(--border); padding: 32px 28px; overflow-y: auto; background: var(--surface-0); }
+.consult-results-panel { padding: 32px; overflow-y: auto; background: var(--surface-bg); }
+
+.panel-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+.panel-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; line-height: 1.6; }
+
+/* Doctor cards */
+.doctor-grid { display: flex; flex-direction: column; gap: 16px; }
+.doctor-card { background: var(--surface-0); border: var(--border); border-radius: var(--radius-lg); padding: 20px; display: flex; gap: 16px; transition: box-shadow var(--transition), border-color var(--transition); }
+.doctor-card:hover { box-shadow: var(--shadow-md); border-color: var(--accent-border); }
+.doctor-avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 22px; color: white; flex-shrink: 0; }
+.doctor-info { flex: 1; }
+.doctor-name { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+.doctor-specialty { font-size: 13px; color: var(--accent); font-weight: 500; margin-bottom: 6px; }
+.doctor-hospital { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.doctor-rating { display: flex; align-items: center; gap: 4px; }
+.star-icon { color: #F59E0B; font-size: 13px; }
+.rating-value { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.rating-count { font-size: 12px; color: var(--text-muted); }
+.doctor-actions { display: flex; align-items: flex-start; }
+
+/* Empty states */
+.no-doctors { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 60px 24px; }
+
+/* Modal */
+.appt-modal { max-width: 480px; }
+
+@media (max-width: 1024px) {
+    .consult-layout { grid-template-columns: 1fr; }
+    .consult-form-panel { border-right: none; border-bottom: var(--border); }
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="hero" style="margin-bottom: 30px;">
-    <h1>Consult with a <span>Doctor</span></h1>
-    <p>Get expert medical advice from certified doctors. Share your symptoms and receive personalized guidance for your health concerns.</p>
-</div>
-<div class="main-container fade-in" style="gap: 40px;">
-    <!-- Form Section -->
-    <div class="form-container shadow-box slide-in" style="background: #f8fbff; border: 1px solid #e3eaf5; border-radius: 18px; box-shadow: 0 6px 24px rgba(64,152,215,0.08);">
-        <h2 style="text-align: center; color: #4098d7; margin-bottom: 24px;">Fill in your details to consult with a doctor</h2>
-        <form action="{{ url_for('doctor_consultation') }}" method="post">
+<div class="consult-layout">
+    <!-- LEFT: Form -->
+    <div class="consult-form-panel">
+        <div class="panel-title">Find a Doctor</div>
+        <div class="panel-desc">Describe your symptoms and we'll match you with the most suitable specialist doctors in your area.</div>
+
+        <form action="{{ url_for('doctor_consultation') }}" method="post" id="doctorForm">
             <div class="form-group">
-                <label for="name"><i class="fas fa-user"></i> Name:</label>
-                <input type="text" class="form-control custom-input" id="name" name="name" placeholder="Enter your name" value="{{ name }}" required>
+                <label class="form-label" for="name">Full Name</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-user input-icon"></i>
+                    <input type="text" class="form-input" id="name" name="name" placeholder="Your name" value="{{ name or '' }}" required>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="age"><i class="fas fa-birthday-cake"></i> Age:</label>
-                <input type="number" class="form-control custom-input" id="age" name="age" placeholder="Enter your age" value="{{ age }}" required>
+
+            <div class="form-row">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" for="age">Age</label>
+                    <input type="number" class="form-input" id="age" name="age" placeholder="Age" value="{{ age or '' }}" min="1" max="120" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" for="email">Email</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input type="email" class="form-input" id="email" name="email" placeholder="Email" value="{{ email or '' }}" required>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="email"><i class="fas fa-envelope"></i> Email:</label>
-                <input type="email" class="form-control custom-input" id="email" name="email" placeholder="Enter your email" value="{{ email }}" required>
+
+            <div class="form-group" style="margin-top: 16px;">
+                <label class="form-label" for="symptoms">Describe Your Symptoms</label>
+                <textarea class="form-textarea" id="symptoms" name="symptoms" placeholder="Describe your symptoms in detail..." rows="4" required>{{ symptoms or '' }}</textarea>
             </div>
-            <div class="form-group">
-                <label for="symptoms"><i class="fas fa-stethoscope"></i> Describe Your Symptoms:</label>
-                <input type="text" class="form-control custom-input" id="symptoms" name="symptoms" placeholder="Describe your symptoms in detail" value="{{ symptoms }}" required>
-            </div>
-            <button type="submit" class="custom-button" style="background-color: #FF2052; width: 100%; margin-top: 18px;">Submit</button>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg" id="findBtn">
+                <i class="fas fa-search"></i> Find Doctors
+            </button>
         </form>
+
+        <div style="margin-top: 28px; padding-top: 24px; border-top: var(--border);">
+            <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px;">Specialist Categories</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                {% set specs = ['Cardiologist', 'Dermatologist', 'Neurologist', 'Orthopedist', 'Pulmonologist', 'Gastroenterologist'] %}
+                {% for s in specs %}
+                <span class="badge badge-neutral" style="cursor: pointer; padding: 4px 10px; font-size: 12px;" onclick="addToSymptoms('{{ s }}')">{{ s }}</span>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 
-    <!-- Suggested Doctors Section -->
-    {% if doctors %}
-    <div class="results-container shadow-box fade-in" style="background: #f8fbff; border-radius: 18px; box-shadow: 0 6px 24px rgba(64,152,215,0.08);">
-        <h2 style="text-align: center; color: #4098d7;">Suggested Doctors</h2>
-        <ul style="list-style: none; padding: 0; margin: 0;">
+    <!-- RIGHT: Results -->
+    <div class="consult-results-panel">
+        {% if doctors %}
+        <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+            <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);">{{ doctors|length }} Doctors Found</div>
+            <span class="badge badge-success">Available</span>
+        </div>
+
+        <div class="doctor-grid">
             {% for doctor in doctors %}
-            <li class="doctor-card" style="background: #fff; border-radius: 16px; box-shadow: 0 4px 16px rgba(64,152,215,0.10); margin-bottom: 24px; display: flex; align-items: center; gap: 18px; padding: 20px 18px; transition: box-shadow 0.3s, transform 0.3s;">
-                <div class="doctor-image" style="flex-shrink: 0;">
-                    <i class="fas fa-user-md" style="font-size: 48px; color: #4098d7; background: #e3f2fd; border-radius: 50%; padding: 16px;"></i>
+            <div class="doctor-card">
+                <div class="doctor-avatar">
+                    <i class="fas fa-user-md"></i>
                 </div>
-                <div class="doctor-details" style="flex: 1;">
-                    <p style="margin: 0 0 4px 0;"><strong>Name:</strong> {{ doctor.name }}</p>
-                    <p style="margin: 0 0 4px 0;"><strong>Hospital:</strong> {{ doctor.hospital }}</p>
-                    <p style="margin: 0 0 4px 0;"><strong>Specialization:</strong> {{ doctor.specialization }}</p>
-                    <p style="margin: 0;"><strong>Rating:</strong> <span style="color: #ffc107;">&#9733;</span> {{ doctor.rating }}</p>
+                <div class="doctor-info">
+                    <div class="doctor-name">{{ doctor.name }}</div>
+                    <div class="doctor-specialty">{{ doctor.specialization }}</div>
+                    <div class="doctor-hospital">
+                        <i class="fas fa-hospital-alt"></i>
+                        {{ doctor.hospital }}
+                    </div>
+                    <div class="doctor-rating">
+                        {% set rating = doctor.rating|float %}
+                        {% for i in range(5) %}
+                            {% if i < rating|int %}
+                            <i class="fas fa-star star-icon"></i>
+                            {% elif i < rating %}
+                            <i class="fas fa-star-half-alt star-icon"></i>
+                            {% else %}
+                            <i class="far fa-star star-icon" style="color: var(--surface-3);"></i>
+                            {% endif %}
+                        {% endfor %}
+                        <span class="rating-value">{{ doctor.rating }}</span>
+                        <span class="rating-count">/ 5.0</span>
+                    </div>
                 </div>
-                <div class="doctor-actions" style="display: flex; align-items: center;">
-                    <button type="button" class="custom-button contact-button" style="background-color: #28a745; padding: 10px 18px;" onclick="openAppointmentForm('{{ doctor.name }}', '{{ doctor.email }}')">
-                        <i class="fas fa-calendar-plus"></i> Connect
+                <div class="doctor-actions">
+                    <button type="button" class="btn btn-primary btn-sm" onclick="openApptModal('{{ doctor.name }}', '{{ doctor.email }}')">
+                        <i class="fas fa-calendar-plus"></i> Book
                     </button>
                 </div>
-            </li>
+            </div>
             {% endfor %}
-        </ul>
-    </div>
-    {% endif %}
-</div>
+        </div>
 
-<!-- Appointment Form Modal -->
-<div id="appointmentModal" class="modal">
-    <div class="modal-content" style="border-radius: 18px; box-shadow: 0 8px 32px rgba(64,152,215,0.18); padding: 32px 24px;">
-        <span class="close-button" onclick="closeAppointmentForm()" style="font-size: 32px; color: #4098d7;">&times;</span>
-        <h2 style="color: #4098d7; text-align: center; margin-bottom: 18px;">Schedule an Appointment</h2>
-        <form id="appointmentForm" action="{{ url_for('schedule_appointment') }}" method="post">
-            <input type="hidden" id="doctorName" name="doctor_name">
-            <input type="hidden" id="doctorEmail" name="doctor_email">
-            <div class="form-group">
-                <label for="patientName"><i class="fas fa-user"></i> Your Name:</label>
-                <input type="text" class="form-control custom-input" id="patientName" name="patient_name" placeholder="Enter your name" required>
+        {% else %}
+        <div class="card" style="min-height: 400px; display: flex; align-items: center; justify-content: center;">
+            <div class="no-doctors">
+                <div style="width: 64px; height: 64px; background: var(--accent-light); border-radius: var(--radius-xl); display: flex; align-items: center; justify-content: center; font-size: 28px; color: var(--accent); margin-bottom: 16px;">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <div style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Find your specialist</div>
+                <div style="font-size: 14px; color: var(--text-muted); max-width: 300px; line-height: 1.6;">Enter your details and symptoms on the left to see matched doctors.</div>
             </div>
-            <div class="form-group">
-                <label for="appointmentDate"><i class="fas fa-calendar"></i> Appointment Date:</label>
-                <input type="date" class="form-control custom-input" id="appointmentDate" name="appointment_date" required>
-            </div>
-            <div class="form-group">
-                <label for="appointmentTime"><i class="fas fa-clock"></i> Appointment Time:</label>
-                <input type="time" class="form-control custom-input" id="appointmentTime" name="appointment_time" required>
-            </div>
-            <div class="form-group">
-                <label for="additionalDetails"><i class="fas fa-info-circle"></i> Additional Details:</label>
-                <textarea class="form-control custom-input" id="additionalDetails" name="additional_details" rows="3" placeholder="Enter any additional details"></textarea>
-            </div>
-            <button type="submit" class="custom-button" style="background-color: #28a745; width: 100%; margin-top: 12px;">Send Appointment Request</button>
-        </form>
+        </div>
+        {% endif %}
     </div>
 </div>
 
+<!-- Appointment Modal -->
+<div class="modal-overlay" id="apptModal">
+    <div class="modal appt-modal">
+        <div class="modal-header">
+            <div>
+                <div class="modal-title">Book Appointment</div>
+                <div style="font-size: 13px; color: var(--text-muted); margin-top: 3px;" id="apptDoctorName"></div>
+            </div>
+            <button class="modal-close" onclick="closeApptModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="apptForm" action="{{ url_for('schedule_appointment') }}" method="post">
+                <input type="hidden" id="doctorNameInput" name="doctor_name">
+                <input type="hidden" id="doctorEmailInput" name="doctor_email">
+
+                <div class="form-group">
+                    <label class="form-label" for="patientName">Your Name</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" class="form-input" id="patientName" name="patient_name" placeholder="Your full name" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="apptDate">Date</label>
+                        <input type="date" class="form-input" id="apptDate" name="appointment_date" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="apptTime">Time</label>
+                        <input type="time" class="form-input" id="apptTime" name="appointment_time" required>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 16px;">
+                    <label class="form-label" for="apptReason">Reason for Visit</label>
+                    <textarea class="form-textarea" id="apptReason" name="reason" placeholder="Brief description of your concern..." rows="3"></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeApptModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="document.getElementById('apptForm').submit()">
+                <i class="fas fa-calendar-check"></i> Confirm Appointment
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
 <script>
-    function openAppointmentForm(doctorName, doctorEmail) {
-        // Get values from the main form
-        const patientName = document.getElementById('name').value;
-        // Pre-fill the appointment form
-        document.getElementById('doctorName').value = doctorName;
-        document.getElementById('doctorEmail').value = doctorEmail;
-        document.getElementById('patientName').value = patientName;
-        document.getElementById('appointmentDate').value = '';
-        document.getElementById('appointmentTime').value = '';
-        document.getElementById('additionalDetails').value = '';
-        document.getElementById('appointmentModal').style.display = 'block';
-    }
-    function closeAppointmentForm() {
-        document.getElementById('appointmentModal').style.display = 'none';
-    }
-    // Modal close on outside click
-    window.onclick = function(event) {
-        const modal = document.getElementById('appointmentModal');
-        if (event.target == modal) {
-            modal.style.display = "none";
-        }
-    }
-</script>
+function openApptModal(name, email) {
+    document.getElementById('apptDoctorName').textContent = 'with ' + name;
+    document.getElementById('doctorNameInput').value = name;
+    document.getElementById('doctorEmailInput').value = email;
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('apptDate').min = today;
+    document.getElementById('apptModal').classList.add('active');
+}
 
-<style>
-    .main-container {
-        display: flex;
-        gap: 40px;
-        justify-content: center;
-        align-items: flex-start;
-        margin-top: 20px;
-        flex-wrap: wrap;
-    }
-    .form-container, .results-container {
-        border-radius: 18px;
-        box-shadow: 0 6px 24px rgba(64,152,215,0.08);
-        background: #f8fbff;
-        padding: 32px 28px;
-        min-width: 320px;
-        max-width: 600px;
-        width: 100%;
-    }
-    .form-container form .custom-button {
-        margin-top: 18px;
-    }
-    .doctor-card {
-        border-radius: 16px;
-        box-shadow: 0 4px 16px rgba(64,152,215,0.10);
-        background: #fff;
-        margin-bottom: 24px;
-        padding: 20px 18px;
-        display: flex;
-        align-items: center;
-        gap: 18px;
-        transition: box-shadow 0.3s, transform 0.3s;
-    }
-    .doctor-card:hover {
-        box-shadow: 0 8px 32px rgba(64,152,215,0.18);
-        transform: translateY(-4px) scale(1.01);
-    }
-    .doctor-image i {
-        font-size: 48px;
-        color: #4098d7;
-        background: #e3f2fd;
-        border-radius: 50%;
-        padding: 16px;
-    }
-    .doctor-details p {
-        margin: 0 0 4px 0;
-        font-size: 15px;
-        color: #333;
-    }
-    .doctor-actions .custom-button {
-        background-color: #28a745;
-        color: #fff;
-        border-radius: 10px;
-        font-size: 15px;
-        padding: 10px 18px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-    }
-    .doctor-actions .custom-button:hover {
-        background: #218838;
-        color: #fff;
-        box-shadow: 0 2px 8px rgba(40,167,69,0.10);
-    }
-    /* Modal Styles */
-    .modal {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        left: 0; top: 0;
-        width: 100%; height: 100%;
-        overflow: auto;
-        background-color: rgba(0,0,0,0.4);
-    }
-    .modal-content {
-        background-color: #fefefe;
-        margin: 5% auto;
-        padding: 32px 24px;
-        border: 1px solid #888;
-        width: 90%;
-        max-width: 420px;
-        border-radius: 18px;
-        box-shadow: 0 8px 32px rgba(64,152,215,0.18);
-        position: relative;
-        animation: fadeIn 0.4s;
-    }
-    .close-button {
-        color: #4098d7;
-        float: right;
-        font-size: 32px;
-        font-weight: bold;
-        cursor: pointer;
-        position: absolute;
-        top: 18px;
-        right: 24px;
-        transition: color 0.2s;
-    }
-    .close-button:hover {
-        color: #FF2052;
-    }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-20px);}
-        to { opacity: 1; transform: translateY(0);}
-    }
-    @media (max-width: 900px) {
-        .main-container {
-            flex-direction: column;
-            gap: 30px;
-        }
-        .form-container, .results-container {
-            max-width: 100%;
-        }
-    }
-    @media (max-width: 600px) {
-        .form-container, .results-container {
-            padding: 18px 6px;
-            min-width: unset;
-        }
-        .doctor-card {
-            padding: 14px 6px;
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        .modal-content {
-            padding: 18px 6px;
-        }
-    }
-</style>
+function closeApptModal() {
+    document.getElementById('apptModal').classList.remove('active');
+}
+
+function addToSymptoms(text) {
+    const ta = document.getElementById('symptoms');
+    ta.value = ta.value ? ta.value + ', ' + text : text;
+    ta.focus();
+}
+
+document.getElementById('doctorForm').addEventListener('submit', function() {
+    const btn = document.getElementById('findBtn');
+    btn.innerHTML = '<span class="animate-spin" style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.4);border-top-color:white;border-radius:50%;margin-right:6px;"></span> Searching...';
+    btn.disabled = true;
+});
+</script>
 {% endblock %}

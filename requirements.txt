@@ -9,7 +9,7 @@ pandas
 numpy
 pillow
 reportlab
-firebase-admin
+supabase
 pyjwt
 cryptography
 bs4

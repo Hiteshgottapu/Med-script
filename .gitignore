@@ -1,0 +1,33 @@
+# Environments and Secrets
+.env
+*.env
+firebase_certs.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Flask session and runtime storage
+flask_session/
+*.db
+*.sqlite
+*.sqlite3
+medscript_commerce.db
+
+# User Uploads and generated files
+uploads/
+Prespriptions/
+scratch/
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

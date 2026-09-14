@@ -1,765 +1,225 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
+{% block title %}Emergency Services{% endblock %}
+{% block page_title %}Emergency{% endblock %}
 
-{% block title %}Emergency SOS Alert{% endblock %}
+{% block extra_css %}
+<style>
+.emergency-page { padding: 32px; max-width: 1100px; }
+
+.emergency-hero { background: var(--error); border-radius: var(--radius-xl); padding: 28px 32px; margin-bottom: 28px; display: flex; align-items: center; gap: 20px; position: relative; overflow: hidden; }
+.emergency-hero::before { content: ""; position: absolute; right: -40px; top: -40px; width: 200px; height: 200px; background: rgba(255,255,255,0.05); border-radius: 50%; }
+.emergency-hero-icon { width: 56px; height: 56px; background: rgba(255,255,255,0.15); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: 26px; color: white; flex-shrink: 0; }
+.emergency-hero-title { font-size: 22px; font-weight: 700; color: white; margin-bottom: 4px; }
+.emergency-hero-desc { font-size: 14px; color: rgba(255,255,255,0.75); }
+.sos-btn { margin-left: auto; background: white; color: var(--error); font-size: 14px; font-weight: 700; padding: 12px 24px; border: none; border-radius: var(--radius-lg); cursor: pointer; display: flex; align-items: center; gap: 8px; flex-shrink: 0; transition: transform var(--transition-fast), box-shadow var(--transition-fast); }
+.sos-btn:hover { transform: scale(1.03); box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+.sos-btn:active { transform: scale(0.98); }
+.sos-pulse { display: inline-block; animation: pulse 1s ease infinite; }
+
+/* Emergency contacts */
+.contact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+.contact-card { background: var(--surface-0); border: var(--border); border-radius: var(--radius-lg); padding: 20px; text-align: center; transition: box-shadow var(--transition), border-color var(--transition); }
+.contact-card:hover { box-shadow: var(--shadow-md); border-color: var(--accent-border); }
+.contact-icon { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 0 auto 12px; }
+.contact-name { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+.contact-number { font-size: 24px; font-weight: 700; color: var(--accent); margin-bottom: 8px; letter-spacing: 1px; }
+.contact-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+
+/* Hospitals */
+.hospital-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.hospital-card { background: var(--surface-0); border: var(--border); border-radius: var(--radius-lg); padding: 20px; display: flex; gap: 16px; transition: box-shadow var(--transition); }
+.hospital-card:hover { box-shadow: var(--shadow-md); }
+.hospital-icon { width: 44px; height: 44px; background: var(--error-light); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--error); flex-shrink: 0; }
+.hospital-name { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
+.hospital-address { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+.hospital-meta { display: flex; gap: 12px; }
+.hospital-meta span { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+
+.section-heading { font-size: 17px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+
+@media (max-width: 900px) {
+    .contact-grid { grid-template-columns: repeat(2, 1fr); }
+    .hospital-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+    .contact-grid { grid-template-columns: 1fr 1fr; }
+    .emergency-hero { flex-direction: column; text-align: center; }
+    .sos-btn { margin: 0 auto; }
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="sos-hero-v2">
-    <div class="sos-glass-card">
-        <!-- Animated Emergency Header -->
-        <div class="sos-banner-animated">
-            <i class="fas fa-exclamation-triangle"></i>
-            <span>EMERGENCY MODE</span>
+<div class="emergency-page">
+
+    <!-- Hero -->
+    <div class="emergency-hero">
+        <div class="emergency-hero-icon">
+            <i class="fas fa-ambulance"></i>
         </div>
-        <!-- SOS Button with Countdown and Icon -->
-        <div class="sos-btn-wrapper">
-            <div class="sos-btn-align">
-                <button id="sos-btn-action" class="sos-circle-v2" title="Send SOS">
-                    <span class="sos-pulse-v2"></span>
-                    <span class="sos-text-v2" id="sos-btn-label">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        SOS
-                    </span>
-                    <span id="sos-countdown">5</span>
-                </button>
+        <div>
+            <div class="emergency-hero-title">Emergency Services</div>
+            <div class="emergency-hero-desc">Quick access to emergency contacts and nearby hospitals. Stay calm — help is a call away.</div>
+        </div>
+        <button class="sos-btn" onclick="sendSOS()">
+            <span class="sos-pulse"><i class="fas fa-phone"></i></span>
+            Call Emergency
+        </button>
+    </div>
+
+    <!-- Emergency Contacts -->
+    <div class="section-heading"><i class="fas fa-phone-alt" style="color: var(--error);"></i> Emergency Contacts</div>
+    <div class="contact-grid" style="margin-bottom: 28px;">
+        <div class="contact-card">
+            <div class="contact-icon" style="background: var(--error-light);">
+                <i class="fas fa-hospital" style="color: var(--error);"></i>
             </div>
-            <div class="sos-btn-caption" style="font-size:1.08rem; color:#7f53ac; font-weight:600; margin-top:0.5rem; letter-spacing:0.02em;">
-                <i class="fas fa-fingerprint"></i> Tap the SOS button to send an instant emergency alert
+            <div class="contact-name">Ambulance</div>
+            <div class="contact-number">108</div>
+            <div class="contact-desc">24/7 Medical Emergency Response</div>
+            <a href="tel:108" class="btn btn-danger btn-block btn-sm"><i class="fas fa-phone"></i> Call 108</a>
+        </div>
+
+        <div class="contact-card">
+            <div class="contact-icon" style="background: #EFF6FF;">
+                <i class="fas fa-shield-alt" style="color: var(--accent);"></i>
+            </div>
+            <div class="contact-name">Police</div>
+            <div class="contact-number">100</div>
+            <div class="contact-desc">Police Emergency Response Unit</div>
+            <a href="tel:100" class="btn btn-primary btn-block btn-sm"><i class="fas fa-phone"></i> Call 100</a>
+        </div>
+
+        <div class="contact-card">
+            <div class="contact-icon" style="background: #FFF7ED;">
+                <i class="fas fa-fire-extinguisher" style="color: #EA580C;"></i>
+            </div>
+            <div class="contact-name">Fire Brigade</div>
+            <div class="contact-number">101</div>
+            <div class="contact-desc">Fire & Rescue Services</div>
+            <a href="tel:101" class="btn btn-secondary btn-block btn-sm" style="border-color: #EA580C; color: #EA580C;"><i class="fas fa-phone"></i> Call 101</a>
+        </div>
+
+        <div class="contact-card">
+            <div class="contact-icon" style="background: var(--success-light);">
+                <i class="fas fa-heart" style="color: var(--success);"></i>
+            </div>
+            <div class="contact-name">Health Helpline</div>
+            <div class="contact-number">104</div>
+            <div class="contact-desc">Medical Advice & Tele-Health</div>
+            <a href="tel:104" class="btn btn-success btn-block btn-sm"><i class="fas fa-phone"></i> Call 104</a>
+        </div>
+
+        <div class="contact-card">
+            <div class="contact-icon" style="background: #F5F3FF;">
+                <i class="fas fa-brain" style="color: #7C3AED;"></i>
+            </div>
+            <div class="contact-name">NIMHANS Helpline</div>
+            <div class="contact-number">080-46110007</div>
+            <div class="contact-desc">Mental Health Support</div>
+            <a href="tel:08046110007" class="btn btn-secondary btn-block btn-sm"><i class="fas fa-phone"></i> Call Now</a>
+        </div>
+
+        <div class="contact-card">
+            <div class="contact-icon" style="background: var(--info-light);">
+                <i class="fas fa-headset" style="color: var(--info);"></i>
+            </div>
+            <div class="contact-name">Disaster Management</div>
+            <div class="contact-number">1077</div>
+            <div class="contact-desc">National Emergency Relief</div>
+            <a href="tel:1077" class="btn btn-secondary btn-block btn-sm"><i class="fas fa-phone"></i> Call 1077</a>
+        </div>
+    </div>
+
+    <!-- Nearby Hospitals -->
+    <div class="d-flex items-center justify-between mb-4">
+        <div class="section-heading" style="margin-bottom: 0;"><i class="fas fa-hospital-alt" style="color: var(--accent);"></i> Nearby Hospitals</div>
+        <button class="btn btn-secondary btn-sm" onclick="detectLocation()">
+            <i class="fas fa-location-arrow"></i> Use My Location
+        </button>
+    </div>
+
+    {% if hospitals %}
+    <div class="hospital-grid">
+        {% for hospital in hospitals %}
+        <div class="hospital-card">
+            <div class="hospital-icon"><i class="fas fa-hospital-alt"></i></div>
+            <div style="flex: 1;">
+                <div class="hospital-name">{{ hospital.name }}</div>
+                <div class="hospital-address"><i class="fas fa-map-marker-alt" style="color: var(--accent); margin-right: 4px;"></i>{{ hospital.address }}</div>
+                <div class="hospital-meta">
+                    {% if hospital.distance %}
+                    <span><i class="fas fa-route"></i> {{ hospital.distance }}</span>
+                    {% endif %}
+                    {% if hospital.phone %}
+                    <span><i class="fas fa-phone"></i> {{ hospital.phone }}</span>
+                    {% endif %}
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 10px;">
+                    {% if hospital.phone %}
+                    <a href="tel:{{ hospital.phone }}" class="btn btn-danger btn-xs"><i class="fas fa-phone"></i> Call</a>
+                    {% endif %}
+                    <a href="https://www.google.com/maps/search/?api=1&query={{ hospital.name|urlencode }}" target="_blank" class="btn btn-secondary btn-xs"><i class="fas fa-map"></i> Directions</a>
+                </div>
             </div>
         </div>
-        <div class="sos-main-content">
-            <h1 class="sos-title-v2" style="font-size:2.3rem; color:#ff2052; letter-spacing:0.03em; margin-bottom:0.7rem;">
-                <i class="fas fa-bell"></i> Emergency Alert Activated
-            </h1>
-            <p class="sos-desc-v2" style="background:rgba(255,32,82,0.07); border-radius:12px; padding:1rem 1.2rem; color:#333; font-size:1.18rem; margin-bottom:1.2rem;">
-                <span class="sos-emoji" aria-label="alert">&#9888;&#65039;</span>
-                <b>Stay calm.</b> Help is on the way.<br>
-                This page will help you find the nearest hospitals and alert your emergency contacts.
-            </p>
-            <div class="sos-info-v2" id="sos-info-actions" style="background:rgba(127,83,172,0.06); border:1.5px solid #e3e6f3;">
-                <div class="sos-step">
-                    <span class="sos-step-circle" style="background:#ff2052; box-shadow:0 2px 8px #ff205233;"><i class="fas fa-phone-alt"></i></span>
-                    <span style="font-weight:600;">Call Emergency: <b>112</b> (India) or your local emergency number</span>
-                </div>
-                <div class="sos-step">
-                    <span class="sos-step-circle" style="background:#4098d7; box-shadow:0 2px 8px #4098d733;"><i class="fas fa-map-marker-alt"></i></span>
-                    <span style="font-weight:600;">Share your location for faster help</span>
-                </div>
-                <div class="sos-step">
-                    <span class="sos-step-circle" style="background:#28a745; box-shadow:0 2px 8px #28a74533;"><i class="fas fa-user-shield"></i></span>
-                    <span style="font-weight:600;">Notify your emergency contacts immediately</span>
-                </div>
-            </div>
-            <div id="sos-action-status" style="margin-top:1.2rem; font-size:1.08rem;"></div>
-            <div id="sos-live-status" style="margin-top:1.2rem; font-weight:600; color:#4098d7; display:none;">
-                <i class="fas fa-broadcast-tower fa-spin"></i> <span id="sos-live-status-text">Live: Waiting for updates...</span>
-            </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="empty-state-icon"><i class="fas fa-map-marker-alt"></i></div>
+            <div class="empty-state-title">Enable location to find hospitals</div>
+            <div class="empty-state-desc">Click "Use My Location" above to automatically find hospitals and emergency services near you.</div>
+            <button class="btn btn-primary" onclick="detectLocation()">
+                <i class="fas fa-location-arrow"></i> Enable Location
+            </button>
         </div>
-        <div class="sos-map-section">
-            <h2 class="sos-map-title"><i class="fas fa-hospital"></i> Nearby Hospitals</h2>
-            <div id="sos-map-container">
-                <div id="sos-map"></div>
+    </div>
+    {% endif %}
+
+    <!-- First Aid Tips -->
+    <div style="margin-top: 28px;">
+        <div class="section-heading"><i class="fas fa-first-aid" style="color: var(--success);"></i> First Aid Reminders</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px;">
+            {% set tips = [
+                ('fa-heartbeat', '#FEF2F2', '#DC2626', 'CPR', 'Push hard and fast — 100–120 compressions per minute on the center of the chest.'),
+                ('fa-lungs', '#EFF6FF', '#1B6CA8', 'Choking', 'Lean person forward and give 5 firm back blows, then 5 abdominal thrusts.'),
+                ('fa-tint', '#ECFDF5', '#059669', 'Bleeding', 'Apply firm pressure with a clean cloth. Keep elevated above the heart if possible.'),
+                ('fa-thermometer', '#FFFBEB', '#D97706', 'High Fever', 'Lukewarm sponging, adequate fluids, and paracetamol. Seek care if above 103°F.'),
+            ] %}
+            {% for icon, bg, color, title, tip in tips %}
+            <div style="background: var(--surface-0); border: var(--border); border-radius: var(--radius-lg); padding: 16px; display: flex; gap: 14px;">
+                <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: {{ bg }}; display: flex; align-items: center; justify-content: center; font-size: 16px; color: {{ color }}; flex-shrink: 0;">
+                    <i class="fas {{ icon }}"></i>
+                </div>
+                <div>
+                    <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">{{ title }}</div>
+                    <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6;">{{ tip }}</div>
+                </div>
             </div>
-            <div id="sos-map-error"></div>
-            <div id="sos-location-help">
-                <i class="fas fa-info-circle"></i>
-                <span>
-                    Location access is required to show nearby hospitals. Please allow location access in your browser settings and reload the page.
-                </span>
-            </div>
-            <!-- Hospital Email Notification Status -->
-            <div id="sos-hospital-email-status" style="margin-top:1.2rem; display:none;">
-                <i class="fas fa-envelope"></i>
-                <span id="sos-hospital-email-message"></span>
-            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
-<style>
-/* Animated Emergency Banner */
-.sos-banner-animated {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(90deg, #ff2052 60%, #ff7f50 100%);
-    color: #fff;
-    font-size: 1.35rem;
-    font-weight: 900;
-    border-radius: 20px;
-    padding: 0.9rem 1.5rem;
-    margin-bottom: 1.2rem;
-    box-shadow: 0 2px 16px rgba(255,32,82,0.18);
-    letter-spacing: 0.08em;
-    gap: 1rem;
-    animation: sos-banner-pulse 1.2s infinite alternate;
-    text-shadow: 0 2px 8px #ff205288;
-}
-.sos-banner-animated i {
-    font-size: 2rem;
-    animation: sos-icon-shake 1.2s infinite alternate;
-}
-@keyframes sos-banner-pulse {
-    0% { box-shadow: 0 2px 12px rgba(255,32,82,0.13); }
-    100% { box-shadow: 0 4px 32px rgba(255,32,82,0.28); }
-}
-@keyframes sos-icon-shake {
-    0% { transform: rotate(-8deg);}
-    100% { transform: rotate(8deg);}
-}
+{% endblock %}
 
-/* Emergency Banner */
-.sos-banner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(90deg, #ff2052 60%, #ff7f50 100%);
-    color: #fff;
-    font-size: 1.25rem;
-    font-weight: 700;
-    border-radius: 18px;
-    padding: 0.7rem 1.2rem;
-    margin-bottom: 1.2rem;
-    box-shadow: 0 2px 12px rgba(255,32,82,0.13);
-    letter-spacing: 0.04em;
-    gap: 0.7rem;
-    animation: sos-banner-pulse 1.5s infinite alternate;
-}
-.sos-banner i {
-    font-size: 1.6rem;
-}
-@keyframes sos-banner-pulse {
-    0% { box-shadow: 0 2px 12px rgba(255,32,82,0.13); }
-    100% { box-shadow: 0 4px 24px rgba(255,32,82,0.23); }
-}
-
-.sos-hero-v2 {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #f8f9fa 60%, #e3e6f3 100%);
-    padding: 2rem 0;
-    font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif;
-}
-.sos-glass-card {
-    background: rgba(255,255,255,0.99);
-    box-shadow: 0 8px 40px 0 rgba(127,83,172,0.13), 0 2px 8px 0 rgba(255,32,82,0.10);
-    border-radius: 32px;
-    padding: 2.5rem 2.5rem 2rem 2.5rem;
-    max-width: 650px;
-    width: 100%;
-    text-align: center;
-    backdrop-filter: blur(12px);
-    border: 1.5px solid rgba(127,83,172,0.10);
-    margin: 2rem 1rem;
-    overflow: visible;
-    display: flex;
-    flex-direction: column;
-    gap: 2.5rem;
-    position: relative;
-    transition: box-shadow 0.3s;
-}
-.sos-glass-card:before {
-    content: "";
-    position: absolute;
-    top: -60px; left: 30px;
-    width: 80%;
-    height: 80px;
-    background: linear-gradient(120deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.03) 100%);
-    border-radius: 50%;
-    filter: blur(2px);
-    opacity: 0.7;
-    pointer-events: none;
-}
-.sos-btn-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    width: 100%;
-}
-.sos-btn-align {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 0.2rem;
-}
-.sos-circle-v2 {
-    position: relative;
-    width: 120px;
-    height: 120px;
-    background: linear-gradient(135deg, #fff 60%, #ffe6eb 100%);
-    border-radius: 50%;
-    box-shadow: 0 0 40px 10px rgba(255,32,82,0.13);
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    outline: none;
-    border: 4px solid #ff2052;
-    transition: box-shadow 0.2s, transform 0.1s, background 0.2s;
-    font-size: 2.2rem;
-    margin-bottom: 0.2rem;
-    animation: sos-btn-glow 1.5s infinite alternate;
-}
-@keyframes sos-btn-glow {
-    0% { box-shadow: 0 0 40px 10px #ff205233; }
-    100% { box-shadow: 0 0 60px 18px #ff205277; }
-}
-.sos-circle-v2:hover {
-    box-shadow: 0 0 32px 16px #ff205244;
-    background: linear-gradient(135deg, #ffe6eb 60%, #fff 100%);
-    transform: scale(1.04);
-}
-.sos-circle-v2:active, .sos-circle-v2.sending {
-    box-shadow: 0 0 20px 10px rgba(255,32,82,0.18);
-    transform: scale(0.96);
-    background: linear-gradient(135deg, #ffe6eb 60%, #fff 100%);
-}
-.sos-circle-v2.sending .sos-text-v2 {
-    color: #d84315;
-    opacity: 0.7;
-}
-#sos-btn-action:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-}
-.sos-text-v2 {
-    font-size: 2.2rem;
-    font-weight: 900;
-    color: #ff2052;
-    letter-spacing: 0.12em;
-    z-index: 2;
-    position: relative;
-    text-shadow: 0 2px 12px rgba(255,32,82,0.15);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.1rem;
-}
-.sos-text-v2 i {
-    font-size: 2.2rem;
-    color: #ff2052;
-}
-.sos-pulse-v2 {
-    position: absolute;
-    top: 50%; left: 50%;
-    width: 120px; height: 120px;
-    background: rgba(255,32,82,0.10);
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    animation: sos-pulse-v2 1.5s infinite;
-    z-index: 1;
-}
-@keyframes sos-pulse-v2 {
-    0% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
-    70% { transform: translate(-50%, -50%) scale(1.25); opacity: 0.1; }
-    100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
-}
-#sos-countdown {
-    display: none;
-    position: absolute;
-    bottom: -32px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #fff3cd;
-    color: #d84315;
-    font-weight: 700;
-    border-radius: 8px;
-    padding: 2px 12px;
-    font-size: 1.1rem;
-    box-shadow: 0 2px 8px rgba(255,32,82,0.08);
-    border: 1px solid #ffd180;
-}
-.sos-btn-caption {
-    font-size: 1rem;
-    color: #ff2052;
-    margin-top: 0.2rem;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    text-align: center;
-    width: 100%;
-}
-.sos-main-content {
-    display: flex;
-    flex-direction: column;
-    gap: 1.2rem;
-}
-.sos-title-v2 {
-    font-size: 2.1rem;
-    font-weight: 800;
-    margin-bottom: 0.6rem;
-    letter-spacing: 0.02em;
-    color: #2d2d2d;
-    text-shadow: 0 2px 12px rgba(127,83,172,0.08);
-}
-.sos-desc-v2 {
-    font-size: 1.15rem;
-    margin-bottom: 0.8rem;
-    color: #444;
-    opacity: 0.97;
-    line-height: 1.6;
-}
-.sos-emoji {
-    font-size: 1.5rem;
-    vertical-align: middle;
-    margin-right: 0.3rem;
-}
-.sos-info-v2 {
-    background: rgba(255,255,255,0.13);
-    border-radius: 14px;
-    padding: 1.3rem 1rem 1.1rem 1rem;
-    color: #333;
-    font-size: 1.08rem;
-    box-shadow: 0 2px 10px rgba(127,83,172,0.08);
-    display: flex;
-    flex-direction: column;
-    gap: 1.1rem;
-    align-items: flex-start;
-    border: 1px solid #f3e6e6;
-}
-.sos-step {
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-}
-.sos-step-circle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.1rem;
-    height: 2.1rem;
-    border-radius: 50%;
-    color: #fff;
-    font-size: 1.2rem;
-    box-shadow: 0 2px 8px rgba(127,83,172,0.08);
-}
-.sos-map-section {
-    margin-top: 2.5rem;
-    background: #f8f9fa;
-    border-radius: 18px;
-    box-shadow: 0 4px 24px rgba(127,83,172,0.10);
-    padding: 1.5rem 1rem 1.5rem 1rem;
-}
-.sos-map-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #4098d7;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    justify-content: center;
-}
-#sos-map-container {
-    width: 100%;
-    border-radius: 14px;
-    overflow: hidden;
-    background: #fff;
-    border: 1px solid #e3e6f3;
-    margin-bottom: 0.5rem;
-}
-#sos-map {
-    width: 100%;
-    height: 320px;
-    min-height: 220px;
-    display: block;
-}
-#sos-map-error {
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    color: #ff2052;
-    margin-top: 0.5rem;
-    display: none;
-}
-#sos-location-help {
-    font-size: 0.98rem;
-    color: #888;
-    margin-top: 0.5rem;
-    display: none;
-}
-#sos-action-status {
-    margin-top: 1.2rem;
-    font-weight: 600;
-    color: #28a745;
-    display: none;
-}
-#sos-hospital-email-status {
-    background: #e3e6f3;
-    color: #4098d7;
-    border-radius: 10px;
-    padding: 0.7rem 1rem;
-    font-size: 1.08rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-    margin-top: 1.2rem;
-}
-#sos-hospital-email-status .fa-envelope {
-    color: #4098d7;
-    font-size: 1.3rem;
-}
-/* Improved hospital list UI for map fallback */
-.sos-hospital-list {
-    margin: 1.2rem 0 0 0;
-    padding: 0;
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 0.7rem;
-}
-.sos-hospital-list li {
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px #4098d722;
-    padding: 0.7rem 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-    font-size: 1.08rem;
-}
-.sos-hospital-list li i {
-    color: #4098d7;
-    font-size: 1.3rem;
-}
-@media (max-width: 800px) {
-    .sos-glass-card { max-width: 98vw; }
-}
-@media (max-width: 600px) {
-    .sos-glass-card { padding: 1.2rem 0.3rem 1.2rem 0.3rem; }
-    .sos-title-v2 { font-size: 1.1rem; }
-    .sos-circle-v2 { width: 70px; height: 70px; }
-    .sos-text-v2 { font-size: 1.1rem; }
-    .sos-btn-caption { font-size: 0.92rem; }
-    .sos-info-v2 { font-size: 0.98rem; }
-    #sos-map { height: 180px; min-height: 120px; }
-}
-</style>
+{% block page_scripts %}
 <script>
-function initSOSMap() {
-    var mapDiv = document.getElementById('sos-map');
-    var errorDiv = document.getElementById('sos-map-error');
-    var helpDiv = document.getElementById('sos-location-help');
-    if (!mapDiv) return;
-
-    function showError(msg) {
-        errorDiv.style.display = 'block';
-        errorDiv.textContent = msg;
-        if (msg.toLowerCase().includes('location access denied')) {
-            if (helpDiv) helpDiv.style.display = 'block';
-        }
-    }
-
-    function addHospitalMarkers(map, hospitals) {
-        console.log("Hospitals received from API:", hospitals); // Debug: log hospitals array
-        hospitals.forEach(function(hospital, idx) {
-            let pos = hospital.location;
-            if (Array.isArray(pos) && pos.length === 2) {
-                pos = {lat: Number(pos[0]), lng: Number(pos[1])};
-            } else if (typeof pos.lat === "string" || typeof pos.lng === "string") {
-                pos = {lat: Number(pos.lat), lng: Number(pos.lng)};
-            }
-            // Debug: log each marker position
-            console.log(`Hospital #${idx + 1}:`, hospital.name, pos);
-            if (!pos || isNaN(pos.lat) || isNaN(pos.lng)) {
-                console.warn("Skipping hospital with invalid coordinates:", hospital);
-                return;
-            }
-            var marker = new google.maps.Marker({
-                position: pos,
-                map: map,
-                title: hospital.name,
-                icon: {
-                    url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLmiPVr0fKj3B2MbzKCjyOwfU5VrIVhDj--w&s",
-                    scaledSize: new google.maps.Size(40, 40)
-                }
-            });
-            var infowindow = new google.maps.InfoWindow({
-                content: "<b>" + hospital.name + "</b><br>" + (hospital.address || "")
-            });
-            marker.addListener('click', function() {
-                infowindow.open(map, marker);
-            });
-        });
-    }
-
-    function showNoHospitalsFallback(lat, lng, map) {
-        var fallbackInfo = new google.maps.InfoWindow({
-            content: "<b>No hospitals found nearby.</b><br>Please call emergency services: <b>112</b> (India) or your local number."
-        });
-        var fallbackMarker = new google.maps.Marker({
-            position: {lat: lat, lng: lng},
-            map: map,
-            title: "Your Location",
-            icon: {
-                url: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
-                scaledSize: new google.maps.Size(32, 32)
-            }
-        });
-        fallbackMarker.addListener('click', function() {
-            fallbackInfo.open(map, fallbackMarker);
-        });
-        fallbackInfo.open(map, fallbackMarker);
-        if (errorDiv) {
-            errorDiv.style.display = 'block';
-            errorDiv.textContent = "No hospitals could be identified in your area. Please call emergency services directly.";
-        }
-    }
-
-    function fetchHospitals(lat, lng, map) {
-        fetch("/api/emergency-alert", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({symptoms: "", lat: lat, lng: lng, radius: 10000})
-        })
-        .then(resp => resp.json())
-        .then(data => {
-            console.log("API /api/emergency-alert response:", data); // Debug: log API response
-            if (data && data.hospitals && data.hospitals.length > 0) {
-                addHospitalMarkers(map, data.hospitals);
-            } else {
-                showNoHospitalsFallback(lat, lng, map);
-            }
-        })
-        .catch((err) => {
-            console.error("Error fetching hospitals:", err);
-            showNoHospitalsFallback(lat, lng, map);
-        });
-    }
-
-    if (window.google && window.google.maps && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(pos) {
-            var lat = pos.coords.latitude;
-            var lng = pos.coords.longitude;
-            var map = new google.maps.Map(mapDiv, {
-                center: {lat: lat, lng: lng},
-                zoom: 14,
-                styles: [
-                    { featureType: "poi.business", stylers: [{ visibility: "off" }] },
-                    { featureType: "poi.medical", stylers: [{ visibility: "on" }] }
-                ]
-            });
-            var userMarker = new google.maps.Marker({
-                position: {lat: lat, lng: lng},
-                map: map,
-                title: "Your Location",
-                icon: {
-                    url: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
-                    scaledSize: new google.maps.Size(32, 32)
-                }
-            });
-            fetchHospitals(lat, lng, map);
-        }, function() {
-            showError("Location access denied. Please enable location to see nearby hospitals.");
-        });
-    } else if (!navigator.geolocation) {
-        showError("Geolocation is not supported by your browser.");
-    }
+function detectLocation() {
+    if (!navigator.geolocation) { showToast('Geolocation is not supported by your browser', 'error'); return; }
+    showToast('Getting your location...', 'info', 'Location');
+    navigator.geolocation.getCurrentPosition(
+        pos => {
+            const lat = pos.coords.latitude, lng = pos.coords.longitude;
+            window.location.href = `/emergency?lat=${lat}&lng=${lng}`;
+        },
+        () => { showToast('Could not get your location. Please check browser permissions.', 'error'); }
+    );
 }
 
-// Real-time updates simulation (replace with WebSocket for production)
-function startLiveStatus() {
-    var liveDiv = document.getElementById('sos-live-status');
-    var liveText = document.getElementById('sos-live-status-text');
-    if (!liveDiv || !liveText) return;
-    liveDiv.style.display = "block";
-    let updates = [
-        "Live: SOS sent. Awaiting hospital response...",
-        "Live: Nearest hospital acknowledged your alert.",
-        "Live: Ambulance dispatched to your location.",
-        "Live: Emergency contact notified.",
-        "Live: Help is on the way. Stay calm."
-    ];
-    let idx = 0;
-    function nextUpdate() {
-        if (idx < updates.length) {
-            liveText.textContent = updates[idx++];
-            setTimeout(nextUpdate, 3500);
-        }
-    }
-    nextUpdate();
+function sendSOS() {
+    if (confirm('Call 108 (Ambulance) immediately?')) window.open('tel:108');
 }
-
-// SOS Button Action with Countdown and improved feedback
-document.addEventListener("DOMContentLoaded", function() {
-    var sosBtn = document.getElementById('sos-btn-action');
-    var statusDiv = document.getElementById('sos-action-status');
-    var infoDiv = document.getElementById('sos-info-actions');
-    var countdownSpan = document.getElementById('sos-countdown');
-    var sosLabel = document.getElementById('sos-btn-label');
-    var hospitalEmailStatusDiv = document.getElementById('sos-hospital-email-status');
-    var hospitalEmailMsg = document.getElementById('sos-hospital-email-message');
-    var countdownSeconds = 5;
-    var countdownTimer = null;
-
-    function resetSOSButton() {
-        sosBtn.disabled = false;
-        sosBtn.classList.remove('sending');
-        countdownSpan.style.display = "none";
-        sosLabel.innerHTML = '<i class="fas fa-exclamation-triangle"></i>SOS';
-    }
-
-    sosBtn && sosBtn.addEventListener('click', function() {
-        // Show the three emergency actions as a checklist
-        if (infoDiv) {
-            infoDiv.innerHTML = `
-                <div class="sos-step">
-                    <span class="sos-step-circle" style="background:#ff2052;"><i class="fas fa-phone-alt"></i></span>
-                    <span>Call Emergency: <b>112</b> (India) or your local emergency number</span>
-                </div>
-                <div class="sos-step">
-                    <span class="sos-step-circle" style="background:#4098d7;"><i class="fas fa-map-marker-alt"></i></span>
-                    <span>Share your location for faster help</span>
-                </div>
-                <div class="sos-step">
-                    <span class="sos-step-circle" style="background:#28a745;"><i class="fas fa-user-shield"></i></span>
-                    <span>Notify your emergency contacts immediately</span>
-                </div>
-            `;
-            infoDiv.style.background = "#fff8e1";
-            infoDiv.style.color = "#d84315";
-            infoDiv.style.border = "1px solid #ffd180";
-            infoDiv.style.transition = "background 0.3s";
-        }
-        statusDiv.style.display = "none";
-        if (!navigator.geolocation) {
-            statusDiv.style.display = "block";
-            statusDiv.style.color = "#ff2052";
-            statusDiv.textContent = "Geolocation is not supported by your browser.";
-            return;
-        }
-        // Start countdown
-        sosBtn.disabled = true;
-        sosBtn.classList.add('sending');
-        var seconds = countdownSeconds;
-        countdownSpan.textContent = seconds;
-        countdownSpan.style.display = "block";
-        sosLabel.innerHTML = '<i class="fas fa-spinner fa-spin"></i>Sending...';
-        countdownTimer = setInterval(function() {
-            seconds--;
-            countdownSpan.textContent = seconds;
-            if (seconds <= 0) {
-                clearInterval(countdownTimer);
-                countdownSpan.style.display = "none";
-                sosLabel.innerHTML = '<i class="fas fa-exclamation-triangle"></i>SOS';
-                // Send location after countdown
-                statusDiv.style.display = "block";
-                statusDiv.style.color = "#4098d7";
-                statusDiv.textContent = "Sending your location to the nearest hospital and emergency contact...";
-                navigator.geolocation.getCurrentPosition(function(pos) {
-                    var lat = pos.coords.latitude;
-                    var lng = pos.coords.longitude;
-                    fetch("/api/emergency-alert", {
-                        method: "POST",
-                        headers: {"Content-Type": "application/json"},
-                        body: JSON.stringify({
-                            symptoms: "SOS Button Pressed",
-                            lat: lat,
-                            lng: lng,
-                            phone: window.EMERGENCY_CONTACT_NUMBER || "+91 8143506309"
-                        })
-                    })
-                    .then(resp => resp.json())
-                    .then(data => {
-                        sosBtn.disabled = false;
-                        sosBtn.classList.remove('sending');
-                        // Show hospital email notification status
-                        if (hospitalEmailStatusDiv && hospitalEmailMsg) {
-                            if (data && data.hospital_email_sent && data.hospital_email) {
-                                hospitalEmailStatusDiv.style.display = "flex";
-                                hospitalEmailMsg.innerHTML = `Emergency alert sent to <b>${data.hospital_email}</b> (hospital email).`;
-                            } else if (data && data.hospital_email_error) {
-                                hospitalEmailStatusDiv.style.display = "flex";
-                                hospitalEmailMsg.innerHTML = `<span style="color:#ff2052;">Could not notify hospital by email: ${data.hospital_email_error}</span>`;
-                            } else {
-                                hospitalEmailStatusDiv.style.display = "none";
-                                hospitalEmailMsg.innerHTML = "";
-                            }
-                        }
-                        if (data && data.emergency) {
-                            statusDiv.style.color = "#28a745";
-                            statusDiv.textContent = "SOS sent! Nearest hospitals and your emergency contact have been notified.";
-                            sosLabel.innerHTML = '<i class="fas fa-check-circle"></i>SOS';
-                            startLiveStatus();
-                        } else {
-                            // Fallback: Try to notify only emergency contact
-                            fetch("/api/emergency-alert", {
-                                method: "POST",
-                                headers: {"Content-Type": "application/json"},
-                                body: JSON.stringify({
-                                    symptoms: "SOS Button Pressed (Contact Only)",
-                                    lat: lat,
-                                    lng: lng,
-                                    phone: window.EMERGENCY_CONTACT_NUMBER || "+91 8143506309",
-                                    contact_only: true
-                                })
-                            })
-                            .then(resp => resp.json())
-                            .then(contactData => {
-                                if (contactData && contactData.emergency) {
-                                    statusDiv.style.color = "#ff9800";
-                                    statusDiv.textContent = "Could not notify hospitals, but your emergency contact has been notified.";
-                                    sosLabel.innerHTML = '<i class="fas fa-check-circle"></i>SOS';
-                                } else {
-                                    statusDiv.style.color = "#ff2052";
-                                    statusDiv.textContent = "Could not notify hospitals or contacts. Please try again.";
-                                    sosLabel.innerHTML = '<i class="fas fa-exclamation-triangle"></i>SOS';
-                                }
-                            })
-                            .catch(() => {
-                                statusDiv.style.color = "#ff2052";
-                                statusDiv.textContent = "Failed to send SOS. Please try again.";
-                                sosLabel.innerHTML = '<i class="fas fa-exclamation-triangle"></i>SOS';
-                            });
-                        }
-                    })
-                    .catch(() => {
-                        sosBtn.disabled = false;
-                        sosBtn.classList.remove('sending');
-                        // Fallback: Try to notify only emergency contact
-                        fetch("/api/emergency-alert", {
-                            method: "POST",
-                            headers: {"Content-Type": "application/json"},
-                            body: JSON.stringify({
-                                symptoms: "SOS Button Pressed (Contact Only)",
-                                lat: lat,
-                                lng: lng,
-                                phone: window.EMERGENCY_CONTACT_NUMBER || "+91 8143506309",
-                                contact_only: true
-                            })
-                        })
-                        .then(resp => resp.json())
-                        .then(contactData => {
-                            if (contactData && contactData.emergency) {
-                                statusDiv.style.color = "#ff9800";
-                                statusDiv.textContent = "Could not notify hospitals, but your emergency contact has been notified.";
-                                sosLabel.innerHTML = '<i class="fas fa-check-circle"></i>SOS';
-                            } else {
-                                statusDiv.style.color = "#ff2052";
-                                statusDiv.textContent = "Failed to send SOS. Please try again.";
-                                sosLabel.innerHTML = '<i class="fas fa-exclamation-triangle"></i>SOS';
-                            }
-                        })
-                        .catch(() => {
-                            statusDiv.style.color = "#ff2052";
-                            statusDiv.textContent = "Failed to send SOS. Please try again.";
-                            sosLabel.innerHTML = '<i class="fas fa-exclamation-triangle"></i>SOS';
-                        });
-                    });
-                }, function() {
-                    sosBtn.disabled = false;
-                    sosBtn.classList.remove('sending');
-                    statusDiv.style.display = "block";
-                    statusDiv.style.color = "#ff2052";
-                    statusDiv.textContent = "Location access denied. Please enable location to send SOS.";
-                    sosLabel.innerHTML = '<i class="fas fa-exclamation-triangle"></i>SOS';
-                });
-            }
-        }, 1000);
-    });
-});
 </script>
-<script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAP_API_KEY }}&callback=initSOSMap" async defer></script>
 {% endblock %}

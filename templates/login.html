@@ -1,421 +1,200 @@
 {% extends "base.html" %}
+{% block title %}Sign In{% endblock %}
+{% block page_title %}Sign In{% endblock %}
 
-{% block title %}MedScript - Login{% endblock %}
-
-{% block content %}
-<div class="auth-container">
-    <!-- Floating Illustrations -->
-    <div class="floating-illustrations">
-        <img src="https://cdn-icons-png.flaticon.com/512/3774/3774299.png" class="float-item doctor-1" alt="Doctor">
-        <img src="https://cdn-icons-png.flaticon.com/512/3774/3774330.png" class="float-item doctor-2" alt="Nurse">
-        <img src="https://cdn-icons-png.flaticon.com/512/2869/2869698.png" class="float-item medical-icon-1" alt="Ambulance">
-        <img src="https://cdn-icons-png.flaticon.com/512/3977/3977307.png" class="float-item medical-icon-2" alt="AI Healthcare">
-    </div>
-
-    <div class="auth-card">
-        <div class="welcome-section">
-            <div class="welcome-icon">
-                <i class="fas fa-user-md"></i>
-            </div>
-            <h2>Welcome Back</h2>
-            <p class="auth-subtitle">Your health journey continues here</p>
-        </div>
-        
-        <form id="loginForm" class="auth-form">
-            <div class="form-group">
-                <label for="username">Email</label>
-                <div class="input-icon">
-                    <i class="fas fa-envelope"></i>
-                    <input type="email" id="username" name="username" required placeholder="Enter your email">
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="password">Password</label>
-                <div class="input-icon">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" id="password" name="password" required placeholder="Enter your password">
-                    <i class="fas fa-eye password-toggle" onclick="togglePassword()"></i>
-                </div>
-            </div>
-
-            <div class="form-actions">
-                <button type="submit" class="auth-button">
-                    <span>Login</span>
-                    <i class="fas fa-arrow-right"></i>
-                </button>
-            </div>
-
-            <div class="auth-links">
-                <a href="/forgot-password" class="forgot-link">
-                    <i class="fas fa-key"></i>
-                    Forgot Password?
-                </a>
-                <a href="/signup" class="signup-link">
-                    <i class="fas fa-user-plus"></i>
-                    Don't have an account? Sign Up
-                </a>
-            </div>
-        </form>
-    </div>
-</div>
-
-<script type="module">
-import { auth } from '/static/firebase.js';
-import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-
-// Function to get URL parameters
-function getUrlParams() {
-    const params = new URLSearchParams(window.location.search);
-    return {
-        email: params.get('email') || params.get('username'),
-        password: params.get('password')
-    };
-}
-
-// Handle URL parameters on page load
-document.addEventListener('DOMContentLoaded', async () => {
-    const params = getUrlParams();
-    if (params.email && params.password) {
-        document.getElementById('username').value = params.email;
-        document.getElementById('password').value = params.password;
-        try {
-            const userCredential = await signInWithEmailAndPassword(auth, params.email, params.password);
-            const formData = new FormData();
-            formData.append('username', params.email);
-            formData.append('password', params.password);
-            
-            const response = await fetch('/login', {
-                method: 'POST',
-                body: formData
-            });
-            
-            if (response.redirected) {
-                window.location.href = response.url;
-            } else {
-                window.location.href = '/';
-            }
-        } catch (error) {
-            console.error("Auto-login error:", error);
-            showError("Login failed. Please check your credentials.");
-        }
-    }
-});
-
-// Handle form submission
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const email = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    
-    try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const formData = new FormData();
-        formData.append('username', email);
-        formData.append('password', password);
-        
-        const response = await fetch('/login', {
-            method: 'POST',
-            body: formData
-        });
-        
-        if (response.redirected) {
-            window.location.href = response.url;
-        } else {
-            window.location.href = '/';
-        }
-    } catch (error) {
-        console.error("Login error:", error);
-        showError("Login failed. Please check your credentials.");
-    }
-});
-
-function showError(message) {
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'error-message';
-    errorDiv.textContent = message;
-    document.querySelector('.auth-form').prepend(errorDiv);
-    setTimeout(() => errorDiv.remove(), 5000);
-}
-
-window.togglePassword = function() {
-    const passwordInput = document.getElementById('password');
-    const toggleIcon = document.querySelector('.password-toggle');
-    if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        toggleIcon.classList.remove('fa-eye');
-        toggleIcon.classList.add('fa-eye-slash');
-    } else {
-        passwordInput.type = 'password';
-        toggleIcon.classList.remove('fa-eye-slash');
-        toggleIcon.classList.add('fa-eye');
-    }
-}
-</script>
-
+{% block extra_css %}
 <style>
-.auth-container {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    padding: 20px;
-    position: relative;
-    overflow: hidden;
-}
+/* Auth layout — no sidebar override for auth pages */
+.auth-page { display: flex; min-height: calc(100vh - 64px); }
 
-.floating-illustrations {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-}
-
-.float-item {
-    position: absolute;
-    width: 80px;
-    height: 80px;
-    animation: float 6s ease-in-out infinite;
-    opacity: 0.8;
-}
-
-.doctor-1 {
-    top: 20%;
-    left: 15%;
-    animation-delay: 0s;
-}
-
-.doctor-2 {
-    top: 60%;
-    right: 15%;
-    animation-delay: 2s;
-}
-
-.medical-icon-1 {
-    bottom: 20%;
-    left: 25%;
-    animation-delay: 1s;
-}
-
-.medical-icon-2 {
-    top: 30%;
-    right: 25%;
-    animation-delay: 3s;
-}
-
-@keyframes float {
-    0% {
-        transform: translateY(0) rotate(0deg);
-    }
-    50% {
-        transform: translateY(-20px) rotate(5deg);
-    }
-    100% {
-        transform: translateY(0) rotate(0deg);
-    }
-}
-
-.auth-card {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 40px;
-    border-radius: 20px;
-    box-shadow: 0 8px 32px 0 rgba(31,38,135,0.15);
-    width: 100%;
-    max-width: 420px;
-    border: 1.5px solid rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(8px);
-    transform: translateY(0);
-    transition: transform 0.3s ease;
-}
-
-.auth-card:hover {
-    transform: translateY(-5px);
-}
-
-.welcome-section {
-    text-align: center;
-    margin-bottom: 30px;
-}
-
-.welcome-icon {
-    width: 80px;
-    height: 80px;
-    background: linear-gradient(45deg, #4098d7, #7f53ac);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 20px;
-}
-
-.welcome-icon i {
-    font-size: 40px;
-    color: white;
-}
-
-.auth-card h2 {
-    color: #222;
-    font-size: 2rem;
-    margin-bottom: 10px;
-    font-weight: 800;
-    background: linear-gradient(45deg, #4098d7, #7f53ac);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.auth-subtitle {
-    color: #666;
-    margin-bottom: 30px;
-    font-size: 1.1rem;
-}
-
-.auth-form .form-group {
-    margin-bottom: 20px;
-}
-
-.auth-form label {
-    display: block;
-    margin-bottom: 8px;
-    color: #4098d7;
-    font-weight: 600;
-}
-
-.input-icon {
-    position: relative;
-}
-
-.input-icon i {
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #b3b3b3;
-}
-
-.password-toggle {
-    right: 15px;
-    left: auto !important;
-    cursor: pointer;
-    transition: color 0.3s ease;
-}
-
-.password-toggle:hover {
-    color: #4098d7;
-}
-
-.auth-form input {
-    width: 100%;
-    padding: 12px 15px 12px 45px;
-    border: 2px solid #e0e0e0;
-    border-radius: 10px;
-    font-size: 1rem;
-    transition: all 0.3s;
-    background: rgba(255, 255, 255, 0.9);
-}
-
-.auth-form input:focus {
-    border-color: #4098d7;
-    box-shadow: 0 0 0 3px rgba(64,152,215,0.1);
-    outline: none;
-}
-
-.auth-button {
-    width: 100%;
-    padding: 14px;
-    background: linear-gradient(45deg, #4098d7, #7f53ac);
-    border: none;
-    border-radius: 10px;
-    color: white;
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-}
-
-.auth-button:hover {
-    background: linear-gradient(45deg, #7f53ac, #4098d7);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 18px rgba(127,83,172,0.18);
-}
-
-.auth-button i {
-    transition: transform 0.3s ease;
-}
-
-.auth-button:hover i {
-    transform: translateX(5px);
-}
-
-.auth-links {
-    margin-top: 20px;
-    display: flex;
+.auth-brand { 
+    width: 420px; 
+    background: var(--sidebar-bg); 
+    padding: 48px 40px; 
+    display: flex; 
     flex-direction: column;
-    gap: 15px;
+    justify-content: center;
+    flex-shrink: 0;
 }
+.auth-brand-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 48px; }
+.auth-brand-mark { width: 40px; height: 40px; background: var(--accent); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 18px; color: white; font-weight: 700; }
+.auth-brand-name { font-size: 20px; font-weight: 700; color: white; }
+.auth-brand-tagline { font-size: 28px; font-weight: 700; color: white; line-height: 1.3; margin-bottom: 16px; letter-spacing: -0.5px; }
+.auth-brand-desc { font-size: 14px; color: var(--sidebar-text); line-height: 1.7; margin-bottom: 40px; }
+.auth-feature { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+.auth-feature-icon { width: 32px; height: 32px; border-radius: var(--radius-sm); background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-size: 14px; color: #60A5FA; flex-shrink: 0; margin-top: 1px; }
+.auth-feature-title { font-size: 14px; font-weight: 600; color: white; margin-bottom: 2px; }
+.auth-feature-desc { font-size: 12px; color: var(--sidebar-text); line-height: 1.5; }
 
-.auth-links a {
-    color: #4098d7;
-    text-decoration: none;
-    font-size: 0.95rem;
-    transition: all 0.3s;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
+.auth-form-area { flex: 1; display: flex; align-items: center; justify-content: center; padding: 48px 40px; }
+.auth-card { width: 100%; max-width: 420px; }
+.auth-card-title { font-size: 26px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; letter-spacing: -0.3px; }
+.auth-card-subtitle { font-size: 14px; color: var(--text-muted); margin-bottom: 32px; }
 
-.auth-links a:hover {
-    color: #7f53ac;
-    transform: translateX(5px);
-}
+.auth-divider { display: flex; align-items: center; gap: 12px; margin: 24px 0; }
+.auth-divider-line { flex: 1; height: 1px; background: var(--surface-2); }
+.auth-divider-text { font-size: 12px; color: var(--text-disabled); white-space: nowrap; }
 
-.error-message {
-    background: #ff5b5b;
-    color: white;
-    padding: 10px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    animation: slideIn 0.3s ease;
-}
+.auth-links-row { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; }
+.auth-link { font-size: 13px; color: var(--accent); text-decoration: none; }
+.auth-link:hover { text-decoration: underline; }
+.auth-signup-row { text-align: center; margin-top: 24px; font-size: 14px; color: var(--text-muted); }
 
-@keyframes slideIn {
-    from {
-        transform: translateY(-20px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
+.form-input-lg { height: 46px; font-size: 15px; }
 
-@media (max-width: 768px) {
-    .floating-illustrations {
-        display: none;
-    }
-    
-    .auth-card {
-        padding: 30px;
-    }
-    
-    .welcome-icon {
-        width: 60px;
-        height: 60px;
-    }
-    
-    .welcome-icon i {
-        font-size: 30px;
-    }
-    
-    .auth-card h2 {
-        font-size: 1.8rem;
-    }
+.password-field { position: relative; }
+.password-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; }
+
+@media (max-width: 900px) {
+    .auth-brand { display: none; }
+    .auth-form-area { padding: 32px 20px; }
 }
 </style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <!-- Brand Panel -->
+    <div class="auth-brand">
+        <div class="auth-brand-logo">
+            <div class="auth-brand-mark">Rx</div>
+            <div class="auth-brand-name">MedScript</div>
+        </div>
+        <div class="auth-brand-tagline">AI-powered clinical workspace</div>
+        <div class="auth-brand-desc">A complete platform for healthcare professionals and patients — from prescription digitization to AI-powered diagnosis.</div>
+
+        <div class="auth-feature">
+            <div class="auth-feature-icon"><i class="fas fa-file-prescription"></i></div>
+            <div>
+                <div class="auth-feature-title">Prescription Recognition</div>
+                <div class="auth-feature-desc">AI-powered OCR extracts and digitizes handwritten prescriptions.</div>
+            </div>
+        </div>
+        <div class="auth-feature">
+            <div class="auth-feature-icon"><i class="fas fa-stethoscope"></i></div>
+            <div>
+                <div class="auth-feature-title">AI Diagnostic Assistant</div>
+                <div class="auth-feature-desc">Symptom analysis and disease prediction using clinical ML models.</div>
+            </div>
+        </div>
+        <div class="auth-feature">
+            <div class="auth-feature-icon"><i class="fas fa-pills"></i></div>
+            <div>
+                <div class="auth-feature-title">Medicine Price Search</div>
+                <div class="auth-feature-desc">Compare prices across Truemeds, PharmEasy, Tata 1mg, and Netmeds.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Area -->
+    <div class="auth-form-area">
+        <div class="auth-card">
+            <div class="auth-card-title">Welcome back</div>
+            <div class="auth-card-subtitle">Sign in to your MedScript account</div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label" for="username">Email address</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input type="email" class="form-input form-input-lg" id="username" name="username" placeholder="you@example.com" required autocomplete="email">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <div class="password-field">
+                        <div class="input-with-icon">
+                            <i class="fas fa-lock input-icon"></i>
+                            <input type="password" class="form-input form-input-lg" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password" style="padding-right: 40px;">
+                        </div>
+                        <button type="button" class="password-toggle" onclick="togglePwd()" id="togglePwdBtn">
+                            <i class="fas fa-eye" id="pwdEyeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="loginError" style="display: none; background: var(--error-light); border: 1px solid var(--error-border); border-radius: var(--radius-md); padding: 10px 14px; font-size: 13px; color: var(--error); margin-bottom: 16px; display: none; align-items: center; gap: 8px;">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span id="loginErrorMsg">Invalid email or password</span>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block btn-xl" id="loginBtn" style="margin-top: 4px;">
+                    Sign In
+                </button>
+            </form>
+
+            <div class="auth-links-row">
+                <a href="/forgot-password" class="auth-link">Forgot password?</a>
+            </div>
+
+            <div class="auth-divider">
+                <div class="auth-divider-line"></div>
+                <div class="auth-divider-text">or</div>
+                <div class="auth-divider-line"></div>
+            </div>
+
+            <div class="auth-signup-row">
+                Don't have an account? <a href="/signup" class="auth-link" style="font-weight: 600;">Create account</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script type="module">
+import { supabase } from '/static/supabase.js';
+
+function showError(msg) {
+    const el = document.getElementById('loginError');
+    document.getElementById('loginErrorMsg').textContent = msg;
+    el.style.display = 'flex';
+}
+
+function setLoading(loading) {
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = loading;
+    btn.innerHTML = loading ? '<span class="animate-spin" style="display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.4);border-top-color:white;border-radius:50%;margin-right:8px;"></span> Signing in...' : 'Sign In';
+}
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    document.getElementById('loginError').style.display = 'none';
+    setLoading(true);
+    try {
+        const { data: authData, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password,
+        });
+        
+        if (error) throw error;
+        
+        const token = authData.session.access_token;
+        const resp = await fetch('/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, supabase_token: token })
+        });
+        const data = await resp.json();
+        if (data.success) window.location.href = data.redirect || '/';
+        else { setLoading(false); showError(data.message || 'Invalid credentials'); }
+    } catch(err) {
+        setLoading(false);
+        let msg = err.message || 'Sign in failed. Please try again.';
+        if (msg.toLowerCase().includes('invalid login credentials')) msg = 'Incorrect email or password.';
+        showError(msg);
+    }
+});
+</script>
+<script>
+function togglePwd() {
+    const inp = document.getElementById('password');
+    const icon = document.getElementById('pwdEyeIcon');
+    if (inp.type === 'password') { inp.type = 'text'; icon.className = 'fas fa-eye-slash'; }
+    else { inp.type = 'password'; icon.className = 'fas fa-eye'; }
+}
+</script>
 {% endblock %}

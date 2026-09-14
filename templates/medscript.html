@@ -1,304 +1,2514 @@
 {% extends "base.html" %}
+{% block title %}Prescription Generator{% endblock %}
+{% block page_title %}Prescription Generator{% endblock %}
 
-{% block title %}Mediscript - Upload Your Prescription{% endblock %}
+{% block extra_css %}
+<style>
+/* ==========================================================================
+   PRESCRIPTION WORKSPACE STYLES
+   ========================================================================== */
+
+.rx-page-container {
+    padding: 24px 32px 60px;
+    max-width: 1280px;
+    margin: 0 auto;
+}
+
+/* Header & Mode Switcher */
+.rx-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.rx-mode-tabs {
+    display: flex;
+    background: var(--surface-1);
+    padding: 4px;
+    border-radius: var(--radius-lg);
+    border: var(--border);
+    gap: 4px;
+}
+
+.rx-mode-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    border-radius: var(--radius-md);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-family: inherit;
+}
+
+.rx-mode-btn:hover {
+    color: var(--text-primary);
+}
+
+.rx-mode-btn.active {
+    background: var(--surface-0);
+    color: var(--accent);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Upload Zone Styles */
+.upload-zone {
+    border: 2px dashed #cbd5e1;
+    border-radius: var(--radius-xl);
+    padding: 36px 20px;
+    text-align: center;
+    background: var(--surface-1);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    user-select: none;
+}
+
+.upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    transform: translateY(-1px);
+}
+
+.upload-zone-icon {
+    font-size: 38px;
+    color: var(--accent);
+    margin-bottom: 4px;
+}
+
+.upload-zone-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.upload-zone-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* Stepper Navigation */
+.rx-stepper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface-0);
+    border: var(--border);
+    border-radius: var(--radius-xl);
+    padding: 16px 24px;
+    margin-bottom: 28px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    position: relative;
+    overflow-x: auto;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    opacity: 0.55;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+    user-select: none;
+}
+
+.step-item.active {
+    opacity: 1;
+}
+
+.step-item.completed {
+    opacity: 0.9;
+}
+
+.step-bubble {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    transition: all var(--transition-fast);
+}
+
+.step-item.active .step-bubble {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 0 0 4px var(--accent-light);
+}
+
+.step-item.completed .step-bubble {
+    background: var(--success);
+    color: white;
+}
+
+.step-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.step-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.step-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.step-connector {
+    flex: 1;
+    height: 2px;
+    background: var(--surface-2);
+    margin: 0 16px;
+    min-width: 24px;
+}
+
+.step-connector.completed {
+    background: var(--success);
+}
+
+/* Form Container & Layout */
+.rx-main-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 28px;
+    align-items: start;
+}
+
+.rx-form-card {
+    background: var(--surface-0);
+    border: var(--border);
+    border-radius: var(--radius-xl);
+    padding: 32px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+}
+
+.rx-step-section {
+    display: none;
+    animation: fadeIn 0.25s ease-in-out;
+}
+
+.rx-step-section.active {
+    display: block;
+}
+
+.section-head {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.section-head-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.section-head-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* Patient Card & Search */
+.patient-select-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.patient-quick-card {
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    background: var(--surface-0);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.patient-quick-card:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+}
+
+.patient-quick-card.selected {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    box-shadow: 0 0 0 2px var(--accent);
+}
+
+.patient-summary-box {
+    background: var(--surface-1);
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    margin-top: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.patient-avatar-lg {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent) 0%, #00897B 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+}
+
+/* Medication Builder Items */
+.med-builder-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.med-item-card {
+    background: var(--surface-1);
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    position: relative;
+    transition: all var(--transition-fast);
+}
+
+.med-item-card:hover {
+    border-color: #CBD5E1;
+}
+
+.med-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.med-item-num {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--surface-0);
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: var(--border);
+}
+
+.med-grid-form {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.med-grid-dosage {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 1fr 1.2fr;
+    gap: 12px;
+}
+
+/* Live Autocomplete Dropdown */
+.autocomplete-wrap {
+    position: relative;
+}
+
+.autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--surface-0);
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    z-index: 100;
+    max-height: 240px;
+    overflow-y: auto;
+    display: none;
+    margin-top: 4px;
+}
+
+.autocomplete-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 13.5px;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--surface-1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background var(--transition-fast);
+}
+
+.autocomplete-item:hover {
+    background: var(--surface-1);
+}
+
+.autocomplete-item-name {
+    font-weight: 600;
+}
+
+.autocomplete-item-meta {
+    font-size: 11.5px;
+    color: var(--text-muted);
+}
+
+/* Side Live Preview / Summary */
+.rx-side-summary {
+    background: var(--surface-0);
+    border: var(--border);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+    position: sticky;
+    top: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+.rx-side-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 14px;
+    border-bottom: var(--border);
+    margin-bottom: 16px;
+}
+
+.rx-side-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.rx-side-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--surface-2);
+}
+
+.rx-side-label {
+    color: var(--text-muted);
+}
+
+.rx-side-val {
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: right;
+}
+
+/* ==========================================================================
+   CLINICAL DOCUMENT PREVIEW & PRINT STYLES
+   ========================================================================== */
+
+.rx-document-preview-wrap {
+    background: #525659;
+    padding: 32px 20px;
+    border-radius: var(--radius-xl);
+    display: flex;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.prescription-paper {
+    background: #FFFFFF;
+    color: #1E293B;
+    width: 100%;
+    max-width: 800px;
+    min-height: 980px;
+    padding: 48px 56px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    border-radius: 4px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.rx-doc-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    border-bottom: 2px solid #0F172A;
+    padding-bottom: 20px;
+    margin-bottom: 24px;
+}
+
+.rx-doc-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.rx-doc-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    background: #1B6CA8;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 800;
+}
+
+.rx-doc-clinic-name {
+    font-size: 20px;
+    font-weight: 800;
+    color: #0F172A;
+    letter-spacing: -0.5px;
+}
+
+.rx-doc-clinic-sub {
+    font-size: 12px;
+    color: #64748B;
+    margin-top: 2px;
+}
+
+.rx-doc-doctor-info {
+    text-align: right;
+}
+
+.rx-doc-doctor-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0F172A;
+}
+
+.rx-doc-doctor-spec {
+    font-size: 12.5px;
+    color: #1B6CA8;
+    font-weight: 600;
+}
+
+.rx-doc-doctor-reg {
+    font-size: 11px;
+    color: #64748B;
+    margin-top: 2px;
+}
+
+/* Patient Banner */
+.rx-doc-patient-bar {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1.5fr;
+    gap: 12px;
+    font-size: 12.5px;
+    margin-bottom: 24px;
+}
+
+.rx-doc-field-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #64748B;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+.rx-doc-field-val {
+    font-weight: 600;
+    color: #0F172A;
+}
+
+/* Diagnosis */
+.rx-doc-diagnosis-box {
+    margin-bottom: 28px;
+    padding: 12px 16px;
+    background: #F1F5F9;
+    border-left: 3px solid #1B6CA8;
+    border-radius: 0 4px 4px 0;
+}
+
+/* Rx Symbol & Table */
+.rx-symbol {
+    font-size: 32px;
+    font-family: 'Times New Roman', serif;
+    font-weight: bold;
+    color: #1B6CA8;
+    line-height: 1;
+    margin-bottom: 12px;
+}
+
+.rx-doc-med-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 32px;
+}
+
+.rx-doc-med-table th {
+    text-align: left;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #475569;
+    padding: 8px 12px;
+    border-bottom: 1.5px solid #CBD5E1;
+}
+
+.rx-doc-med-table td {
+    padding: 12px;
+    font-size: 13px;
+    border-bottom: 1px solid #E2E8F0;
+    vertical-align: top;
+}
+
+.rx-med-name-cell {
+    font-weight: 700;
+    color: #0F172A;
+    font-size: 14px;
+}
+
+.rx-med-instruction-tag {
+    font-size: 11.5px;
+    color: #475569;
+    margin-top: 3px;
+}
+
+.rx-doc-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-top: 1px solid #E2E8F0;
+    padding-top: 24px;
+    margin-top: 40px;
+}
+
+.rx-doc-signature-block {
+    text-align: center;
+    width: 200px;
+}
+
+.rx-doc-sig-line {
+    border-top: 1px dashed #0F172A;
+    margin-top: 48px;
+    padding-top: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #0F172A;
+}
+
+/* Buttons and Actions Bar */
+.rx-actions-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: var(--border);
+}
+
+/* Loading Overlay */
+.rx-loading-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.rx-loading-content {
+    background: var(--surface-0);
+    border-radius: var(--radius-xl);
+    padding: 36px 44px;
+    text-align: center;
+    box-shadow: var(--shadow-xl);
+    max-width: 380px;
+    width: 90%;
+}
+
+/* ==========================================================================
+   DEDICATED PRINT MEDIA STYLESHEET
+   ========================================================================== */
+
+@media print {
+    /* Hide all application chrome */
+    body * {
+        visibility: hidden;
+    }
+
+    .app-shell,
+    .sidebar,
+    .topbar,
+    .rx-header-bar,
+    .rx-stepper,
+    .rx-side-summary,
+    .rx-actions-bottom,
+    .rx-mode-tabs,
+    .btn,
+    .toast-container,
+    .command-overlay {
+        display: none !important;
+    }
+
+    /* Isolate only the prescription document or scanned form */
+    #prescriptionPrintDoc,
+    #prescriptionPrintDoc *,
+    #scannedPrescriptionPrintArea,
+    #scannedPrescriptionPrintArea * {
+        visibility: visible !important;
+    }
+
+    #prescriptionPrintDoc {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 24px !important;
+        box-shadow: none !important;
+        border: none !important;
+        background: #FFFFFF !important;
+        color: #000000 !important;
+    }
+
+    .rx-document-preview-wrap {
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .prescription-paper {
+        box-shadow: none !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    @page {
+        margin: 1.5cm;
+        size: A4 portrait;
+    }
+/* Scanned Prescription Form View Styles */
+.rx-scanned-form-wrap {
+    background: var(--surface-0);
+    border: var(--border);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.rx-form-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.rx-clinic-name {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rx-doc-meta {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-top: 3px;
+}
+
+.rx-form-grid-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    background: var(--surface-1);
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.rx-form-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.rx-cell-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+}
+
+.rx-cell-val {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.rx-diag-card {
+    background: rgba(27, 108, 168, 0.06);
+    border-left: 3.5px solid var(--accent);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+}
+
+.rx-scanned-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.rx-scanned-table th {
+    background: var(--surface-2);
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    padding: 10px 12px;
+    border-bottom: 1.5px solid var(--border-color);
+    text-align: left;
+}
+
+.rx-scanned-table td {
+    padding: 12px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: top;
+}
+
+.rx-scanned-table tr:last-child td {
+    border-bottom: none;
+}
+
+.rx-form-pill {
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 12px;
+    background: var(--surface-2);
+    color: var(--text-primary);
+}
+
+.rx-freq-pill {
+    background: rgba(27, 108, 168, 0.12);
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.rx-timing-pill {
+    background: rgba(234, 179, 8, 0.12);
+    color: #b45309;
+    font-weight: 600;
+}
+
+.rx-view-toggle {
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid var(--border-color);
+    background: var(--surface-1);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.rx-view-toggle.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    box-shadow: 0 1px 3px rgba(27, 108, 168, 0.25);
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .rx-main-layout { grid-template-columns: 1fr; }
+    .rx-side-summary { display: none; }
+    .rx-page-container { padding: 16px; }
+    .med-grid-form { grid-template-columns: 1fr; }
+    .med-grid-dosage { grid-template-columns: 1fr 1fr; }
+    .prescription-paper { padding: 24px; }
+}
+
+@media (max-width: 600px) {
+    .rx-doc-patient-bar { grid-template-columns: 1fr 1fr; }
+    .med-grid-dosage { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="hero">
-    <h1>Med Script's <span>Prescriptions</span> Recognition</h1>
-    <p>MedScript uses advanced image processing to digitize prescriptions, making medical data management seamless. Its AI-powered assistant provides precise, empathetic responses to your health inquiries.</p>
+<div class="rx-page-container">
+
+    <!-- Top Mode Header -->
+    <div class="rx-header-bar">
+        <div>
+            <h1 style="font-size: 24px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px; letter-spacing: -0.4px;">
+                Prescription Workspace
+            </h1>
+            <p style="font-size: 13.5px; color: var(--text-muted); margin: 0;">
+                Create verified digital prescriptions or scan handwritten prescriptions using AI.
+            </p>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <div class="rx-mode-tabs">
+                <button type="button" class="rx-mode-btn active" id="btnModeGenerator" onclick="switchMainMode('generator')">
+                    <i class="fas fa-file-medical"></i> Digital Generator
+                </button>
+                <button type="button" class="rx-mode-btn" id="btnModeScanner" onclick="switchMainMode('scanner')">
+                    <i class="fas fa-camera"></i> Scan & OCR (AI)
+                </button>
+            </div>
+
+            {% if recent_prescriptions %}
+            <button class="btn btn-secondary btn-sm" onclick="openRecentHistoryModal()">
+                <i class="fas fa-history"></i> History ({{ recent_prescriptions|length }})
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         SECTION 1: DIGITAL PRESCRIPTION GENERATOR WORKFLOW
+         ========================================================================= -->
+    <div id="sectionDigitalGenerator">
+
+        <!-- Stepper -->
+        <div class="rx-stepper" id="stepperNav">
+            <div class="step-item active" id="stepIndicator-1" onclick="navigateToStep(1)">
+                <div class="step-bubble">1</div>
+                <div class="step-info">
+                    <span class="step-title">Patient</span>
+                    <span class="step-sub">Select identity</span>
+                </div>
+            </div>
+
+            <div class="step-connector" id="stepConn-1"></div>
+
+            <div class="step-item" id="stepIndicator-2" onclick="navigateToStep(2)">
+                <div class="step-bubble">2</div>
+                <div class="step-info">
+                    <span class="step-title">Clinical</span>
+                    <span class="step-sub">Diagnosis & vitals</span>
+                </div>
+            </div>
+
+            <div class="step-connector" id="stepConn-2"></div>
+
+            <div class="step-item" id="stepIndicator-3" onclick="navigateToStep(3)">
+                <div class="step-bubble">3</div>
+                <div class="step-info">
+                    <span class="step-title">Medicines</span>
+                    <span class="step-sub">Rx & dosages</span>
+                </div>
+            </div>
+
+            <div class="step-connector" id="stepConn-3"></div>
+
+            <div class="step-item" id="stepIndicator-4" onclick="navigateToStep(4)">
+                <div class="step-bubble">4</div>
+                <div class="step-info">
+                    <span class="step-title">Instructions</span>
+                    <span class="step-sub">Advice & follow-up</span>
+                </div>
+            </div>
+
+            <div class="step-connector" id="stepConn-4"></div>
+
+            <div class="step-item" id="stepIndicator-5" onclick="navigateToStep(5)">
+                <div class="step-bubble">5</div>
+                <div class="step-info">
+                    <span class="step-title">Review</span>
+                    <span class="step-sub">Verification</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Form + Sidebar Layout -->
+        <div class="rx-main-layout" id="generatorFormWrap">
+
+            <!-- Left Interactive Form Panels -->
+            <div class="rx-form-card">
+
+                <!-- STEP 1: PATIENT -->
+                <div class="rx-step-section active" id="stepSection-1">
+                    <div class="section-head">
+                        <div>
+                            <div class="section-head-title">Select or Add Patient</div>
+                            <div class="section-head-desc">Choose an existing patient profile or fill in the details below.</div>
+                        </div>
+                        <span class="badge badge-accent"><i class="fas fa-user-check"></i> Step 1 of 5</span>
+                    </div>
+
+                    <!-- Quick Select Patient Cards -->
+                    <div style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 10px;">
+                        Quick Select Recent Patients:
+                    </div>
+                    <div class="patient-select-grid">
+                        <div class="patient-quick-card selected" onclick="selectQuickPatient('John Doe', 34, 'Male', 'PT-94821', '+1 555-0192', 'Penicillin', 'None', this)">
+                            <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;">JD</div>
+                            <div>
+                                <div style="font-weight: 600; font-size: 13.5px; color: var(--text-primary);">John Doe</div>
+                                <div style="font-size: 11.5px; color: var(--text-muted);">34 yrs • Male</div>
+                            </div>
+                        </div>
+
+                        <div class="patient-quick-card" onclick="selectQuickPatient('Sarah Miller', 28, 'Female', 'PT-83912', '+1 555-0144', 'Sulfa drugs', 'Cetirizine 10mg', this)">
+                            <div style="width: 36px; height: 36px; border-radius: 50%; background: #9333EA; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;">SM</div>
+                            <div>
+                                <div style="font-weight: 600; font-size: 13.5px; color: var(--text-primary);">Sarah Miller</div>
+                                <div style="font-size: 11.5px; color: var(--text-muted);">28 yrs • Female</div>
+                            </div>
+                        </div>
+
+                        <div class="patient-quick-card" onclick="selectQuickPatient('Robert Chen', 52, 'Male', 'PT-71934', '+1 555-0188', 'None', 'Metformin 500mg', this)">
+                            <div style="width: 36px; height: 36px; border-radius: 50%; background: #0D9488; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;">RC</div>
+                            <div>
+                                <div style="font-weight: 600; font-size: 13.5px; color: var(--text-primary);">Robert Chen</div>
+                                <div style="font-size: 11.5px; color: var(--text-muted);">52 yrs • Male</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Patient Inputs -->
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Patient Full Name <span style="color: var(--error);">*</span></label>
+                            <input type="text" class="form-input" id="patName" value="John Doe" placeholder="e.g. John Doe" oninput="updateLivePreview()">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Patient ID / MRN</label>
+                            <input type="text" class="form-input" id="patId" value="PT-94821" placeholder="e.g. PT-94821" oninput="updateLivePreview()">
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Age</label>
+                            <input type="number" class="form-input" id="patAge" value="34" placeholder="34" oninput="updateLivePreview()">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Gender</label>
+                            <select class="form-select" id="patGender" onchange="updateLivePreview()">
+                                <option value="Male" selected>Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Known Drug Allergies</label>
+                            <input type="text" class="form-input" id="patAllergies" value="Penicillin" placeholder="e.g. Penicillin, Peanuts, None" oninput="updateLivePreview()">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Contact Phone</label>
+                            <input type="text" class="form-input" id="patPhone" value="+1 555-0192" placeholder="+1 (555) 000-0000">
+                        </div>
+                    </div>
+
+                    <!-- Patient Summary Card -->
+                    <div class="patient-summary-box">
+                        <div class="patient-avatar-lg" id="summaryAvatar">JD</div>
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);" id="summaryName">John Doe</div>
+                                <span class="badge badge-neutral" id="summaryId">ID: PT-94821</span>
+                            </div>
+                            <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;" id="summaryMeta">
+                                34 Years • Male
+                            </div>
+                            <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                                <span class="badge badge-error" id="summaryAllergyBadge">Allergy: Penicillin</span>
+                                <span class="badge badge-info">Status: Outpatient</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rx-actions-bottom">
+                        <div></div>
+                        <button type="button" class="btn btn-primary btn-md" onclick="validateAndGo(1, 2)">
+                            Next: Clinical Details <i class="fas fa-arrow-right" style="margin-left: 6px;"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 2: CLINICAL DETAILS -->
+                <div class="rx-step-section" id="stepSection-2">
+                    <div class="section-head">
+                        <div>
+                            <div class="section-head-title">Clinical Details & Diagnosis</div>
+                            <div class="section-head-desc">Enter presenting symptoms, vitals, and medical diagnosis.</div>
+                        </div>
+                        <span class="badge badge-accent"><i class="fas fa-stethoscope"></i> Step 2 of 5</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Chief Complaint <span style="color: var(--error);">*</span></label>
+                        <input type="text" class="form-input" id="clinChiefComplaint" value="Persistent dry cough and mild fever for 3 days" placeholder="e.g. Fever, sore throat, and headaches" oninput="updateLivePreview()">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Symptoms</label>
+                        <input type="text" class="form-input" id="clinSymptoms" value="Cough, sore throat, fatigue, low-grade fever" placeholder="e.g. Cough, fever, headache" oninput="updateLivePreview()">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Primary Diagnosis <span style="color: var(--error);">*</span></label>
+                        <input type="text" class="form-input" id="clinDiagnosis" value="Acute Upper Respiratory Tract Infection (URTI)" placeholder="e.g. Acute Bronchitis, Type 2 Diabetes" oninput="updateLivePreview()">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Clinical & Examination Notes</label>
+                        <textarea class="form-textarea" id="clinNotes" rows="3" placeholder="e.g. BP: 120/80 mmHg, Pulse: 78 bpm, SpO2: 98%. Chest clear to auscultation." oninput="updateLivePreview()">BP: 120/80 mmHg, SpO2: 98%. Pharynx congested. Chest clear to auscultation.</textarea>
+                    </div>
+
+                    <div class="rx-actions-bottom">
+                        <button type="button" class="btn btn-secondary btn-md" onclick="navigateToStep(1)">
+                            <i class="fas fa-arrow-left" style="margin-right: 6px;"></i> Back: Patient
+                        </button>
+                        <button type="button" class="btn btn-primary btn-md" onclick="validateAndGo(2, 3)">
+                            Next: Medicines (Rx) <i class="fas fa-arrow-right" style="margin-left: 6px;"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 3: MEDICINES (MEDICATION BUILDER) -->
+                <div class="rx-step-section" id="stepSection-3">
+                    <div class="section-head">
+                        <div>
+                            <div class="section-head-title">Prescribe Medications (Rx)</div>
+                            <div class="section-head-desc">Add medications with precise strengths, forms, frequencies, and durations.</div>
+                        </div>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="addNewMedicineRow()">
+                            <i class="fas fa-plus"></i> Add Medicine
+                        </button>
+                    </div>
+
+                    <!-- Quick Suggestions Pills -->
+                    <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span style="font-size: 12px; font-weight: 600; color: var(--text-muted);">Quick Add:</span>
+                        <button type="button" class="btn btn-ghost btn-xs" onclick="addPresetMedicine('Paracetamol', '500 mg', 'Tablet', '1 tablet', '3 times daily', '3 days', 'After food')">+ Paracetamol 500mg</button>
+                        <button type="button" class="btn btn-ghost btn-xs" onclick="addPresetMedicine('Amoxicillin', '500 mg', 'Capsule', '1 capsule', '3 times daily', '5 days', 'After food')">+ Amoxicillin 500mg</button>
+                        <button type="button" class="btn btn-ghost btn-xs" onclick="addPresetMedicine('Pantoprazole', '40 mg', 'Tablet', '1 tablet', 'Once daily', '14 days', '30 min before breakfast')">+ Pantoprazole 40mg</button>
+                        <button type="button" class="btn btn-ghost btn-xs" onclick="addPresetMedicine('Cetirizine', '10 mg', 'Tablet', '1 tablet', 'Once daily', '5 days', 'At bedtime')">+ Cetirizine 10mg</button>
+                    </div>
+
+                    <!-- Dynamic Repeatable Medication Items Container -->
+                    <div class="med-builder-list" id="medicationsContainer">
+                        <!-- Items rendered dynamically via JS -->
+                    </div>
+
+                    <button type="button" class="btn btn-secondary btn-sm" style="width: 100%; border: 2px dashed var(--surface-3); padding: 12px;" onclick="addNewMedicineRow()">
+                        <i class="fas fa-plus-circle"></i> + Add Another Medication
+                    </button>
+
+                    <div class="rx-actions-bottom">
+                        <button type="button" class="btn btn-secondary btn-md" onclick="navigateToStep(2)">
+                            <i class="fas fa-arrow-left" style="margin-right: 6px;"></i> Back: Clinical
+                        </button>
+                        <button type="button" class="btn btn-primary btn-md" onclick="validateAndGo(3, 4)">
+                            Next: Instructions <i class="fas fa-arrow-right" style="margin-left: 6px;"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 4: INSTRUCTIONS -->
+                <div class="rx-step-section" id="stepSection-4">
+                    <div class="section-head">
+                        <div>
+                            <div class="section-head-title">Instructions & Follow-Up</div>
+                            <div class="section-head-desc">Patient lifestyle recommendations, dietary precautions, and review timeline.</div>
+                        </div>
+                        <span class="badge badge-accent"><i class="fas fa-clipboard-list"></i> Step 4 of 5</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">General Advice & Instructions</label>
+                        <textarea class="form-textarea" id="instGeneral" rows="3" placeholder="e.g. Take medications after meals with plenty of water. Adequate rest recommended." oninput="updateLivePreview()">Drink warm fluids frequently. Avoid exposure to cold dust and drafts. Take full antibiotic course as prescribed.</textarea>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Dietary Recommendations</label>
+                            <input type="text" class="form-input" id="instDiet" value="Light, warm meals. Avoid cold or deeply fried items." placeholder="e.g. Low sodium, high protein" oninput="updateLivePreview()">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Follow-Up Review</label>
+                            <input type="text" class="form-input" id="instFollowUp" value="5 days or earlier if fever persists" placeholder="e.g. 5 days, 1 week, As needed" oninput="updateLivePreview()">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Emergency Warning Signs</label>
+                        <input type="text" class="form-input" id="instWarning" value="Seek immediate medical attention if experiencing high fever > 103°F or breathing difficulty." placeholder="e.g. Seek ER if shortness of breath occurs" oninput="updateLivePreview()">
+                    </div>
+
+                    <div class="rx-actions-bottom">
+                        <button type="button" class="btn btn-secondary btn-md" onclick="navigateToStep(3)">
+                            <i class="fas fa-arrow-left" style="margin-right: 6px;"></i> Back: Medicines
+                        </button>
+                        <button type="button" class="btn btn-primary btn-md" onclick="validateAndGo(4, 5)">
+                            Next: Review & Generate <i class="fas fa-arrow-right" style="margin-left: 6px;"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 5: REVIEW & VERIFICATION -->
+                <div class="rx-step-section" id="stepSection-5">
+                    <div class="section-head">
+                        <div>
+                            <div class="section-head-title">Review Prescription Details</div>
+                            <div class="section-head-desc">Double-check all clinical parameters before generating the official document.</div>
+                        </div>
+                        <span class="badge badge-success"><i class="fas fa-check-double"></i> Ready to Generate</span>
+                    </div>
+
+                    <!-- Review Patient Card -->
+                    <div class="setting-card" style="margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                            <div style="font-weight: 700; font-size: 14.5px; color: var(--text-primary);"><i class="fas fa-user-circle" style="color: var(--accent); margin-right: 6px;"></i> Patient Identity</div>
+                            <button type="button" class="btn btn-ghost btn-xs" onclick="navigateToStep(1)"><i class="fas fa-edit"></i> Edit</button>
+                        </div>
+                        <div class="form-grid-2" style="font-size: 13.5px;">
+                            <div><span style="color: var(--text-muted);">Name:</span> <strong id="revName">John Doe</strong></div>
+                            <div><span style="color: var(--text-muted);">ID / MRN:</span> <strong id="revId">PT-94821</strong></div>
+                            <div><span style="color: var(--text-muted);">Age & Gender:</span> <span id="revAgeGender">34 yrs • Male</span></div>
+                            <div><span style="color: var(--text-muted);">Allergies:</span> <span class="badge badge-error" id="revAllergies">Penicillin</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Review Clinical Diagnosis -->
+                    <div class="setting-card" style="margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                            <div style="font-weight: 700; font-size: 14.5px; color: var(--text-primary);"><i class="fas fa-stethoscope" style="color: var(--accent); margin-right: 6px;"></i> Diagnosis & Symptoms</div>
+                            <button type="button" class="btn btn-ghost btn-xs" onclick="navigateToStep(2)"><i class="fas fa-edit"></i> Edit</button>
+                        </div>
+                        <div style="font-size: 13.5px; margin-bottom: 8px;">
+                            <span style="color: var(--text-muted);">Diagnosis:</span> <strong id="revDiagnosis" style="color: var(--accent);">Acute Upper Respiratory Tract Infection (URTI)</strong>
+                        </div>
+                        <div style="font-size: 13px; color: var(--text-secondary);" id="revChiefComplaint">
+                            Complaint: Persistent dry cough and mild fever
+                        </div>
+                    </div>
+
+                    <!-- Review Medications List -->
+                    <div class="setting-card" style="margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                            <div style="font-weight: 700; font-size: 14.5px; color: var(--text-primary);"><i class="fas fa-pills" style="color: var(--accent); margin-right: 6px;"></i> Prescribed Medications</div>
+                            <button type="button" class="btn btn-ghost btn-xs" onclick="navigateToStep(3)"><i class="fas fa-edit"></i> Edit</button>
+                        </div>
+                        <div id="revMedicationsList" style="display: flex; flex-direction: column; gap: 8px;">
+                            <!-- Dynamic review med rows -->
+                        </div>
+                    </div>
+
+                    <!-- Review Instructions -->
+                    <div class="setting-card">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                            <div style="font-weight: 700; font-size: 14.5px; color: var(--text-primary);"><i class="fas fa-info-circle" style="color: var(--accent); margin-right: 6px;"></i> Instructions & Follow-up</div>
+                            <button type="button" class="btn btn-ghost btn-xs" onclick="navigateToStep(4)"><i class="fas fa-edit"></i> Edit</button>
+                        </div>
+                        <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;" id="revGeneralAdvice">
+                            Drink warm fluids. Avoid cold drafts.
+                        </div>
+                        <div style="margin-top: 8px; font-size: 13px;">
+                            <span style="color: var(--text-muted);">Follow-up:</span> <strong id="revFollowUp">5 days</strong>
+                        </div>
+                    </div>
+
+                    <div class="rx-actions-bottom">
+                        <button type="button" class="btn btn-secondary btn-md" onclick="navigateToStep(4)">
+                            <i class="fas fa-arrow-left" style="margin-right: 6px;"></i> Back: Instructions
+                        </button>
+                        <button type="button" class="btn btn-primary btn-lg" style="padding: 12px 28px; font-size: 15px;" id="btnGenerateRx" onclick="submitGeneratePrescription()">
+                            <i class="fas fa-magic"></i> Generate Prescription
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Live Preview Summary -->
+            <div class="rx-side-summary">
+                <div class="rx-side-header">
+                    <div class="rx-side-title"><i class="fas fa-file-prescription" style="color: var(--accent); margin-right: 6px;"></i> Live Summary</div>
+                    <span class="badge badge-neutral" id="liveDateBadge">Today</span>
+                </div>
+
+                <div class="rx-side-row">
+                    <span class="rx-side-label">Patient</span>
+                    <span class="rx-side-val" id="sidePatName">John Doe</span>
+                </div>
+                <div class="rx-side-row">
+                    <span class="rx-side-label">Diagnosis</span>
+                    <span class="rx-side-val" id="sideDiagnosis" style="color: var(--accent);">URTI</span>
+                </div>
+                <div class="rx-side-row">
+                    <span class="rx-side-label">Medications</span>
+                    <span class="rx-side-val" id="sideMedCount">2 Items</span>
+                </div>
+                <div class="rx-side-row">
+                    <span class="rx-side-label">Follow-up</span>
+                    <span class="rx-side-val" id="sideFollowUp">5 days</span>
+                </div>
+
+                <div style="margin-top: 20px; padding-top: 16px; border-top: var(--border);">
+                    <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); margin-bottom: 8px;">Prescribing Clinician</div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;">
+                            DR
+                        </div>
+                        <div>
+                            <div style="font-size: 13.5px; font-weight: 600; color: var(--text-primary);">{{ session.get('profile', {}).get('name') or 'Dr. Clinician, M.D.' }}</div>
+                            <div style="font-size: 11.5px; color: var(--text-muted);">License: MED-849204</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- =========================================================================
+             FINAL STEP: CLINICAL PRESCRIPTION PREVIEW & ACTION BAR
+             ========================================================================= -->
+        <div id="prescriptionResultView" style="display: none; animation: fadeIn 0.3s ease-in-out;">
+
+            <!-- Top Action Header -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge badge-success" style="font-size: 13px; padding: 6px 12px;"><i class="fas fa-check-circle"></i> Prescription Generated</span>
+                    <span style="font-size: 13px; color: var(--text-muted);" id="generatedRxId">ID: RX-260914-8492</span>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="returnToEditMode()">
+                        <i class="fas fa-edit"></i> Edit Details
+                    </button>
+                    <a id="btnDownloadPdfLink" href="{{ url_for('download_pdf') }}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-file-pdf" style="color: #EF4444;"></i> Download PDF
+                    </a>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="printPrescriptionDoc()">
+                        <i class="fas fa-print"></i> Print Prescription
+                    </button>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="resetNewPrescription()">
+                        <i class="fas fa-plus"></i> Create New
+                    </button>
+                </div>
+            </div>
+
+            <!-- Authentic Printable Clinical Document Container -->
+            <div class="rx-document-preview-wrap">
+                <div class="prescription-paper" id="prescriptionPrintDoc">
+
+                    <div>
+                        <!-- Document Header / Letterhead -->
+                        <div class="rx-doc-header">
+                            <div class="rx-doc-brand">
+                                <div class="rx-doc-logo">M</div>
+                                <div>
+                                    <div class="rx-doc-clinic-name">MEDSCRIPT CLINIC & HEALTHCARE</div>
+                                    <div class="rx-doc-clinic-sub">Integrated Clinical Workspace & Medical Intelligence</div>
+                                    <div class="rx-doc-clinic-sub">Reg. No: MED-8942-CL | emergency@medscript.health</div>
+                                </div>
+                            </div>
+                            <div class="rx-doc-doctor-info">
+                                <div class="rx-doc-doctor-name">{{ session.get('profile', {}).get('name') or 'Dr. Clinician, M.D.' }}</div>
+                                <div class="rx-doc-doctor-spec">Physician & Clinical Specialist</div>
+                                <div class="rx-doc-doctor-reg">Medical Council Reg: #9482910</div>
+                            </div>
+                        </div>
+
+                        <!-- Patient Demographics Bar -->
+                        <div class="rx-doc-patient-bar">
+                            <div>
+                                <div class="rx-doc-field-label">Patient Name</div>
+                                <div class="rx-doc-field-val" id="docPatName">John Doe</div>
+                            </div>
+                            <div>
+                                <div class="rx-doc-field-label">Age / Gender</div>
+                                <div class="rx-doc-field-val" id="docPatAgeGender">34 Y / Male</div>
+                            </div>
+                            <div>
+                                <div class="rx-doc-field-label">Patient ID</div>
+                                <div class="rx-doc-field-val" id="docPatId">PT-94821</div>
+                            </div>
+                            <div>
+                                <div class="rx-doc-field-label">Date & Time</div>
+                                <div class="rx-doc-field-val" id="docRxDate">14 Sep 2026</div>
+                            </div>
+                        </div>
+
+                        <!-- Diagnosis & Clinical Summary -->
+                        <div class="rx-doc-diagnosis-box">
+                            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #1B6CA8; letter-spacing: 0.5px;">Clinical Diagnosis</div>
+                            <div style="font-size: 14.5px; font-weight: 700; color: #0F172A; margin-top: 2px;" id="docDiagnosis">Acute Upper Respiratory Tract Infection (URTI)</div>
+                            <div style="font-size: 12px; color: #475569; margin-top: 4px;" id="docNotes">Notes: Vitals stable. SpO2 98%. Chest clear.</div>
+                        </div>
+
+                        <!-- Rx Symbol & Table -->
+                        <div class="rx-symbol">℞</div>
+
+                        <table class="rx-doc-med-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 5%;">#</th>
+                                    <th style="width: 40%;">Medicine & Strength</th>
+                                    <th style="width: 25%;">Dosage & Frequency</th>
+                                    <th style="width: 15%;">Duration</th>
+                                    <th style="width: 15%;">Timing</th>
+                                </tr>
+                            </thead>
+                            <tbody id="docMedTableBody">
+                                <!-- Rendered dynamically via JS -->
+                            </tbody>
+                        </table>
+
+                        <!-- Instructions & Advice -->
+                        <div style="margin-top: 24px; padding: 14px 18px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px;">
+                            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; margin-bottom: 4px;">General Instructions & Advice</div>
+                            <div style="font-size: 12.5px; color: #1E293B; line-height: 1.6;" id="docInstructions">
+                                Drink warm fluids frequently. Avoid exposure to cold dust and drafts. Take full antibiotic course as prescribed.
+                            </div>
+                            <div style="font-size: 12px; font-weight: 600; color: #1B6CA8; margin-top: 8px;" id="docFollowUp">
+                                Follow-up: 5 days or earlier if fever persists
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer & Signature Block -->
+                    <div class="rx-doc-footer">
+                        <div style="font-size: 10.5px; color: #94A3B8; max-width: 420px; line-height: 1.4;">
+                            * This digital prescription is electronically signed and verified by MedScript Clinical Workspace. For emergency assistance or verification, contact clinic reception.
+                        </div>
+                        <div class="rx-doc-signature-block">
+                            <div style="font-family: 'Brush Script MT', cursive, sans-serif; font-size: 20px; color: #1B6CA8; margin-bottom: -32px;">
+                                {{ session.get('profile', {}).get('name') or 'Dr. Clinician' }}
+                            </div>
+                            <div class="rx-doc-sig-line">
+                                Authorized Medical Signature
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- =========================================================================
+         SECTION 2: SCAN & OCR RECOGNITION (PRESERVED & ENHANCED)
+         ========================================================================= -->
+    <div id="sectionScanOCR" style="display: none;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+            <!-- Left: Upload Box -->
+            <div class="rx-form-card">
+                <div class="section-head">
+                    <div>
+                        <div class="section-head-title">Prescription OCR Scanner</div>
+                        <div class="section-head-desc">Upload a scanned photo, handwritten prescription, or PDF to extract medication details with AI Vision.</div>
+                    </div>
+                    <span class="badge badge-accent"><i class="fas fa-magic"></i> Multimodal AI</span>
+                </div>
+
+                <form action="/medscript" method="POST" enctype="multipart/form-data" id="upload-form" onsubmit="return handleUploadSubmit(event)">
+                    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('file-upload').click()">
+                        <div class="upload-zone-icon" id="uploadIcon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <div class="upload-zone-title" id="uploadTitle">Click to browse or drop prescription image here</div>
+                        <div class="upload-zone-hint">Supports JPG, PNG, WebP, PDF (Max 15MB)</div>
+                        <button type="button" class="btn btn-primary btn-sm" style="margin-top: 6px;">
+                            <i class="fas fa-folder-open"></i> Browse Files
+                        </button>
+                        <input type="file" name="image" id="file-upload" accept="image/*,application/pdf" required style="display:none;" onchange="handleFileSelected(this)">
+                        <img id="upload-preview" class="upload-preview" src="" alt="Preview" style="display:none; max-width: 200px; max-height: 180px; margin: 12px auto 6px; border-radius: 8px; border: 1px solid var(--border-color); object-fit: contain;">
+                        <div id="upload-file-info" style="display:none; font-size: 12px; font-weight: 600; color: var(--accent); margin-top: 4px;"></div>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;" id="processBtn">
+                            <i class="fas fa-brain"></i> Extract & Analyze with Medical Vision AI
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right: Results -->
+            <div class="rx-form-card" id="prescriptionScanResultsCard">
+                <div class="section-head" style="align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <div class="section-head-title" style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-file-prescription" style="color: var(--accent);"></i>
+                            <span>Prescription Intake Form</span>
+                            {% if parsed_rx %}
+                            <span class="badge badge-success" style="font-size: 11px; padding: 2px 8px;">
+                                <i class="fas fa-check-circle"></i> AI Structured Form
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="section-head-desc">Prescription details transcribed and arranged in an official clinical form layout.</div>
+                    </div>
+
+                    {% if text %}
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <button type="button" class="rx-view-toggle active" id="btnOcrFormView" onclick="toggleOcrView('form')">
+                            <i class="fas fa-file-medical"></i> Form Format
+                        </button>
+                        <button type="button" class="rx-view-toggle" id="btnOcrRawView" onclick="toggleOcrView('raw')">
+                            <i class="fas fa-align-left"></i> Raw Transcript
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if text %}
+                <!-- ==================== STRUCTURED FORM FORMAT VIEW ==================== -->
+                <div id="ocrFormContainer" style="display: block;">
+                    <div class="rx-scanned-form-wrap" id="scannedPrescriptionPrintArea">
+
+                        <!-- Form Header / Clinic Letterhead -->
+                        <div class="rx-form-header-bar">
+                            <div>
+                                <div class="rx-clinic-name">
+                                    <i class="fas fa-hospital-symbol"></i>
+                                    <span>{{ (parsed_rx.doctor.clinic if parsed_rx and parsed_rx.doctor else '') or 'MEDICAL CLINIC PRESCRIPTION' }}</span>
+                                </div>
+                                <div class="rx-doc-meta">
+                                    <strong>Doctor:</strong> Dr. {{ (parsed_rx.doctor.name if parsed_rx and parsed_rx.doctor else '') or 'Attending Physician' }}
+                                    {% if parsed_rx and parsed_rx.doctor and parsed_rx.doctor.specialty %} • {{ parsed_rx.doctor.specialty }}{% endif %}
+                                    {% if parsed_rx and parsed_rx.doctor and parsed_rx.doctor.reg_no %} • Reg No: {{ parsed_rx.doctor.reg_no }}{% endif %}
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <span class="badge badge-accent" style="font-size: 12px; font-weight: 700;">
+                                    <i class="fas fa-calendar-alt"></i> Date: {{ (parsed_rx.patient.date if parsed_rx and parsed_rx.patient else '') or 'Today' }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Patient Details Form Grid -->
+                        <div style="margin-bottom: 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">
+                            <i class="fas fa-user-circle"></i> Patient Information
+                        </div>
+                        <div class="rx-form-grid-fields">
+                            <div class="rx-form-cell">
+                                <span class="rx-cell-label">Patient Name</span>
+                                <span class="rx-cell-val" style="color: var(--accent);">{{ (parsed_rx.patient.name if parsed_rx and parsed_rx.patient else '') or 'Not Specified' }}</span>
+                            </div>
+                            <div class="rx-form-cell">
+                                <span class="rx-cell-label">Age</span>
+                                <span class="rx-cell-val">{{ (parsed_rx.patient.age if parsed_rx and parsed_rx.patient else '') or '--' }} Yrs</span>
+                            </div>
+                            <div class="rx-form-cell">
+                                <span class="rx-cell-label">Gender</span>
+                                <span class="rx-cell-val">{{ (parsed_rx.patient.gender if parsed_rx and parsed_rx.patient else '') or '--' }}</span>
+                            </div>
+                            <div class="rx-form-cell">
+                                <span class="rx-cell-label">Known Allergies</span>
+                                {% if parsed_rx and parsed_rx.patient and parsed_rx.patient.allergies and parsed_rx.patient.allergies.lower() not in ('none', 'null', 'no', 'none reported') %}
+                                <span class="badge badge-error" style="font-size: 11.5px;"><i class="fas fa-exclamation-triangle"></i> {{ parsed_rx.patient.allergies }}</span>
+                                {% else %}
+                                <span class="rx-cell-val" style="color: var(--success); font-size: 12.5px;"><i class="fas fa-shield-alt"></i> None Reported</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Clinical Diagnosis Banner -->
+                        <div class="rx-diag-card">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                                <span style="font-size: 11.5px; font-weight: 800; text-transform: uppercase; color: var(--accent); letter-spacing: 0.5px;">
+                                    <i class="fas fa-stethoscope"></i> Clinical Diagnosis
+                                </span>
+                            </div>
+                            <div style="font-size: 15px; font-weight: 700; color: var(--text-primary);">
+                                {{ (parsed_rx.clinical.diagnosis if parsed_rx and parsed_rx.clinical else '') or 'General Outpatient Consultation' }}
+                            </div>
+                            {% if parsed_rx and parsed_rx.clinical and parsed_rx.clinical.symptoms %}
+                            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 4px;">
+                                <strong>Symptoms / Complaints:</strong> {{ parsed_rx.clinical.symptoms }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Rx Medications Form Table -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                            <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                                <span style="font-family: 'Times New Roman', serif; font-size: 20px; font-weight: bold; color: var(--accent);">℞</span>
+                                <span>Prescribed Medication Regimen</span>
+                            </div>
+                            {% if parsed_rx and parsed_rx.medicines %}
+                            <span class="badge badge-neutral">{{ parsed_rx.medicines|length }} item(s)</span>
+                            {% endif %}
+                        </div>
+
+                        <div style="overflow-x: auto; border: var(--border); border-radius: var(--radius-lg); margin-bottom: 20px;">
+                            <table class="rx-scanned-table" style="margin-bottom: 0;">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 36px; text-align: center;">#</th>
+                                        <th>Medicine & Form</th>
+                                        <th>Dosage</th>
+                                        <th>Frequency</th>
+                                        <th>Duration</th>
+                                        <th>Timing</th>
+                                        <th>Instructions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if parsed_rx and parsed_rx.medicines %}
+                                        {% for m in parsed_rx.medicines %}
+                                        <tr>
+                                            <td style="text-align: center; font-weight: 700; color: var(--text-muted);">{{ loop.index }}</td>
+                                            <td>
+                                                <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">
+                                                    {{ m.name }} {% if m.strength %}<span class="rx-form-pill" style="font-size: 11px; margin-left: 4px;">{{ m.strength }}</span>{% endif %}
+                                                </div>
+                                                <div style="margin-top: 2px;">
+                                                    <span class="badge badge-neutral" style="font-size: 10.5px;">{{ m.form or 'Tablet' }}</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <strong style="color: var(--text-primary); font-size: 13px;">{{ m.dose or '1 unit' }}</strong>
+                                            </td>
+                                            <td>
+                                                <span class="rx-form-pill rx-freq-pill">{{ m.frequency or 'As directed' }}</span>
+                                            </td>
+                                            <td>
+                                                <span style="font-weight: 600; font-size: 12.5px; color: var(--text-primary);">{{ m.duration or '5 days' }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="rx-form-pill rx-timing-pill">{{ m.timing or 'After food' }}</span>
+                                            </td>
+                                            <td style="font-size: 12px; color: var(--text-muted); max-width: 160px;">
+                                                {{ m.instructions or 'Take as prescribed by doctor' }}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="7" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                                                No individual medications separated. See raw transcript below.
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Care Advice & Instructions -->
+                        <div style="background: var(--surface-1); border: var(--border); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 18px;">
+                            <div style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px;">
+                                <i class="fas fa-info-circle"></i> Advice & Clinical Instructions
+                            </div>
+                            <div style="font-size: 13px; color: var(--text-primary); line-height: 1.55;">
+                                <strong>General:</strong> {{ (parsed_rx.instructions.general if parsed_rx and parsed_rx.instructions else '') or 'Follow medication regimen strictly with adequate hydration.' }}
+                            </div>
+                            {% if parsed_rx and parsed_rx.instructions and parsed_rx.instructions.diet %}
+                            <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+                                <strong>Dietary Care:</strong> {{ parsed_rx.instructions.diet }}
+                            </div>
+                            {% endif %}
+                            <div style="font-size: 12.5px; font-weight: 600; color: var(--accent); margin-top: 6px;">
+                                <i class="fas fa-calendar-check"></i> Follow-up: {{ (parsed_rx.instructions.follow_up if parsed_rx and parsed_rx.instructions else '') or 'Review after 5 days if symptoms persist.' }}
+                            </div>
+                        </div>
+
+                        <!-- Sign-off & Verification Footer -->
+                        <div style="display: flex; justify-content: space-between; align-items: flex-end; padding-top: 14px; border-top: 1px dashed var(--border-color); font-size: 12px; color: var(--text-muted);">
+                            <div>
+                                <div><i class="fas fa-shield-check" style="color: var(--success);"></i> MedScript AI OCR Validated Record</div>
+                                <div style="font-size: 11px; margin-top: 2px;">Digital transcription for clinical reference</div>
+                            </div>
+                            <div style="text-align: center; min-width: 140px;">
+                                <div style="border-top: 1px solid var(--text-muted); padding-top: 4px; font-weight: 700; color: var(--text-primary);">
+                                    Doctor Signature
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ==================== RAW TRANSCRIPT VIEW ==================== -->
+                <div id="ocrRawContainer" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 12px; font-weight: 600; color: var(--text-muted);">Raw AI Vision Transcript:</span>
+                        <button type="button" class="btn btn-ghost btn-xs" onclick="copyOcrTranscript(this)">
+                            <i class="fas fa-copy"></i> Copy Text
+                        </button>
+                    </div>
+                    <div style="background: var(--surface-1); border: var(--border); border-radius: var(--radius-lg); padding: 18px; max-height: 480px; overflow-y: auto;">
+                        <div id="rawOcrTextContent" style="font-family: 'SF Mono', Consolas, Monaco, monospace; font-size: 13px; line-height: 1.65; white-space: pre-wrap; color: var(--text-primary);">{{ text }}</div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons Bar -->
+                <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; padding-top: 16px; border-top: var(--border);">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-primary btn-sm" onclick='loadScannedRxIntoGenerator({{ parsed_rx|tojson if parsed_rx else "{}" }})'>
+                            <i class="fas fa-magic"></i> Pre-fill into Digital Generator
+                        </button>
+                        <a href="/chatbot?text={{ text|urlencode }}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-comment-medical"></i> Consult AI Assistant
+                        </a>
+                        <a href="{{ url_for('download_pdf') }}?text={{ text|urlencode }}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-file-pdf"></i> Download PDF
+                        </a>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-ghost btn-sm" onclick="printScannedForm()">
+                            <i class="fas fa-print"></i> Print Form
+                        </button>
+                    </div>
+                </div>
+
+                {% else %}
+                <div class="empty-state" style="padding: 48px 20px;">
+                    <div class="empty-state-icon"><i class="fas fa-file-invoice"></i></div>
+                    <div class="empty-state-title">No Scanned Document Yet</div>
+                    <div class="empty-state-desc">Upload a handwritten or printed prescription on the left. The AI Vision engine will parse and present it in this structured medical form format.</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<div class="upload-container" id="upload-container">
-    <label for="file-upload" class="upload-icon">
-        <div class="circle-animation">
-            <img src="{{ url_for('static', filename='image.png') }}" alt="Upload">
-        </div>
-    </label>
-    <p>Upload the Prescription to see the Magic</p>
-
-    <h1 style="font-size: 24px; color: var(--primary-color); margin-top: 20px;">Drop your prescription here</h1>
-    <p style="font-size: 16px; color: var(--secondary-color);">Supports: JPG, PNG, PDF</p>
-
-    <div id="image-preview" style="display: none;">
-        <h2>Image Preview</h2>
-        <img id="preview" src="" alt="Image Preview" style="width: 250px; height: 250px; object-fit: cover;">
+<!-- Loading Indeterminate Modal -->
+<div class="rx-loading-modal" id="rxLoadingModal">
+    <div class="rx-loading-content">
+        <div class="animate-spin" style="width: 44px; height: 44px; border: 3px solid rgba(27, 108, 168, 0.2); border-top-color: var(--accent); border-radius: 50%; margin: 0 auto 16px;"></div>
+        <div style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Generating Clinical Prescription...</div>
+        <div style="font-size: 13px; color: var(--text-muted);">Verifying medication parameters and compiling document.</div>
     </div>
-
-    <form action="/medscript" method="POST" enctype="multipart/form-data" id="upload-form">
-        <input type="file" name="image" id="file-upload" accept="image/*,application/pdf" required onchange="previewImage(event)" style="font-size: 50px;">
-        <input type="submit" value="Process Prescription" style="width: 200px; padding: 10px;">
-    </form> 
-    <br>
-
-    {% if text %}
-    <div class="extracted-text-container" style="position: relative; width: 100%; max-width: 600px; margin: 0 auto;">
-        <h2>Extracted Prescription</h2>
-        <div style="position: relative; display: inline-block; width: calc(100% - 20px); margin: 0 10px;">
-            <textarea id="extracted-text" readonly style="
-                width: 100%;
-                height: 250px;
-                padding: 40px 10px 10px 10px;
-                box-sizing: border-box;
-                font-size: 18px;
-                resize: vertical;
-            ">{{ text.replace('\n', '\r\n') }}</textarea>
-
-            <div class="text-actions" style="
-                position: absolute;
-                top: 10px;
-                right: 15px;
-                background: rgba(255, 255, 255, 0.8);
-                padding: 5px 8px;
-                border-radius: 5px;
-                display: flex;
-                gap: 10px;
-            ">
-                <a href="{{ url_for('download_pdf') }}?text={{ text|urlencode }}" style="color: gray;">
-                    <i class="fas fa-download"></i>
-                </a>
-                <button onclick="copyText()" style="color: gray; background: none; border: none; cursor: pointer;">
-                    <i class="fas fa-copy"></i>
-                </button>
-            </div>
-            <div style="display: flex; justify-content: center; margin-top: 20px;">
-                <button onclick="analyzeText()" style="
-                    background-color: #007bff;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    font-size: 16px;
-                    cursor: pointer;
-                    border-radius: 5px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 5px;
-                ">
-                    Analyze Prescription
-                    <i class="fas fa-chart-line"></i>
-                </button>
-            </div>
-        </div>
-    </div>
-    {% if medicines %}
-    <div class="medications-container" style="width: 100%; max-width: 800px; margin: 30px auto;">
-        <h2>Your Medications</h2>
-        
-        {% for medicine in medicines %}
-        <div class="medication-card" style="
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            overflow: hidden;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        ">
-            <div class="medication-header" style="
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 15px 20px;
-                background: #f9f9f9;
-                cursor: pointer;
-            " onclick="toggleMedicationDetails(this)">
-                <div class="medication-name">
-                    <h3 style="margin: 0; color: #2c3e50; font-size: 18px;">{{ medicine.name }}</h3>
-                    <p style="margin: 5px 0 0; color: #7f8c8d; font-size: 14px;">
-                        {{ medicine.concentration }} • {{ medicine.dosage }}
-                    </p>
-                </div>
-                <div class="refill-info" style="display: flex; align-items: center;">
-                    <span class="refill-count" style="color: #3498db; margin-right: 15px; font-weight: 500;">
-                        {% if loop.index == 1 %}2 refills{% endif %}
-                        {% if loop.index == 2 %}3 refills{% endif %}
-                        {% if loop.index == 3 %}5 refills{% endif %}
-                    </span>
-                    <i class="fas fa-chevron-down toggle-icon" style="color: #7f8c8d; transition: transform 0.3s;"></i>
-                </div>
-            </div>
-            
-            <div class="medication-details" style="
-                padding: 0 20px;
-                max-height: 0;
-                overflow: hidden;
-                transition: max-height 0.3s ease-out;
-            ">
-                <div class="detail-section" style="margin-bottom: 15px; padding-top: 20px;">
-                    <h4 style="margin: 0 0 5px 0; color: #2c3e50; font-size: 15px;">Prescribed By</h4>
-                    <p style="margin: 0; color: #34495e; font-size: 14px;">Dr. Sarah Johnson</p>
-                </div>
-                
-                <div class="detail-section" style="margin-bottom: 15px;">
-                    <h4 style="margin: 0 0 5px 0; color: #2c3e50; font-size: 15px;">Instructions</h4>
-                    <p style="margin: 0; color: #34495e; font-size: 14px;">
-                        {% if medicine.name == 'Lisinopril' %}
-                        Take in the morning with or without food.
-                        {% elif medicine.name == 'Atorvastatin' %}
-                        Take in the evening with or without food.
-                        {% elif medicine.name == 'Metformin' %}
-                        Take with meals to reduce stomach upset.
-                        {% endif %}
-                    </p>
-                </div>
-                
-                <div class="detail-section" style="margin-bottom: 15px;">
-                    <h4 style="margin: 0 0 5px 0; color: #2c3e50; font-size: 15px;">Purpose</h4>
-                    <p style="margin: 0; color: #34495e; font-size: 14px;">
-                        {% if medicine.name == 'Lisinopril' %}
-                        Treatment for high blood pressure and heart failure
-                        {% elif medicine.name == 'Atorvastatin' %}
-                        Lowers cholesterol and reduces risk of heart disease
-                        {% elif medicine.name == 'Metformin' %}
-                        Treatment for type 2 diabetes
-                        {% endif %}
-                    </p>
-                </div>
-                
-                <div class="detail-section" style="margin-bottom: 15px;">
-                    <h4 style="margin: 0 0 5px 0; color: #2c3e50; font-size: 15px;">Possible Side Effects</h4>
-                    <ul style="margin: 0; color: #34495e; font-size: 14px; padding-left: 20px;">
-                        {% if medicine.name == 'Lisinopril' %}
-                        <li>Dizziness</li>
-                        <li>Headache</li>
-                        <li>Dry cough</li>
-                        {% elif medicine.name == 'Atorvastatin' %}
-                        <li>Muscle pain</li>
-                        <li>Digestive problems</li>
-                        <li>Liver enzyme abnormalities</li>
-                        {% elif medicine.name == 'Metformin' %}
-                        <li>Nausea</li>
-                        <li>Diarrhea</li>
-                        <li>Stomach upset</li>
-                        {% endif %}
-                    </ul>
-                </div>
-                
-                <button class="refill-btn" style="
-                    background: #f8f9fa;
-                    border: 1px solid #e0e0e0;
-                    padding: 8px 15px;
-                    border-radius: 5px;
-                    margin: 10px 0 20px;
-                    cursor: pointer;
-                    color: #3498db;
-                    font-weight: 500;
-                ">
-                    Request Refill
-                </button>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    {% else %}
-    <div style="text-align: center; margin-top: 20px;">
-    </div>
-    {% endif %}
 </div>
 
+<!-- History Modal -->
+<div class="modal-backdrop" id="recentHistoryModal" style="display: none;" onclick="if(event.target===this) closeRecentHistoryModal()">
+    <div class="modal" style="max-width: 600px;">
+        <div class="modal-header">
+            <div class="modal-title"><i class="fas fa-history" style="color: var(--accent); margin-right: 8px;"></i> Recent Generated Prescriptions</div>
+            <button class="modal-close" onclick="closeRecentHistoryModal()">&times;</button>
+        </div>
+        <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
+            {% if recent_prescriptions %}
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                {% for r in recent_prescriptions %}
+                <div class="setting-card" style="margin-bottom: 0; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <div style="font-weight: 700; font-size: 14px; color: var(--text-primary);">{{ r.patient.name }}</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">{{ r.date }} • {{ r.clinical.diagnosis or 'Prescription' }} • {{ r.medicines|length }} Meds</div>
+                    </div>
+                    <button class="btn btn-secondary btn-xs" onclick='loadExistingPrescription({{ r|tojson }})'>
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state" style="padding: 24px;">
+                <div class="empty-state-title">No Prescriptions Yet</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
 <script>
-    function previewImage(event) {
-        const preview = document.getElementById('preview');
-        const imagePreview = document.getElementById('image-preview');
-        const file = event.target.files[0];
-        const reader = new FileReader();
+// ==========================================================================
+// STATE MANAGEMENT & DATA MODEL
+// ==========================================================================
 
-        reader.onload = function() {
-            preview.src = reader.result;
-            imagePreview.style.display = 'block';
-        };
+let currentStep = 1;
 
-        if (file) {
-            reader.readAsDataURL(file);
+let prescriptionState = {
+    patient: {
+        name: "John Doe",
+        age: 34,
+        gender: "Male",
+        id: "PT-94821",
+        allergies: "Penicillin",
+        phone: "+1 555-0192"
+    },
+    clinical: {
+        chief_complaint: "Persistent dry cough and mild fever for 3 days",
+        symptoms: "Cough, sore throat, fatigue, low-grade fever",
+        diagnosis: "Acute Upper Respiratory Tract Infection (URTI)",
+        notes: "BP: 120/80 mmHg, SpO2: 98%. Pharynx congested. Chest clear to auscultation."
+    },
+    medicines: [
+        {
+            name: "Amoxicillin",
+            strength: "500 mg",
+            form: "Capsule",
+            dose: "1 capsule",
+            frequency: "3 times daily",
+            duration: "5 days",
+            route: "Oral",
+            timing: "After food",
+            instructions: "Complete full antibiotic course"
+        },
+        {
+            name: "Paracetamol",
+            strength: "500 mg",
+            form: "Tablet",
+            dose: "1 tablet",
+            frequency: "As needed (SOS)",
+            duration: "3 days",
+            route: "Oral",
+            timing: "After food",
+            instructions: "Take for fever > 100°F or body pain"
+        }
+    ],
+    instructions: {
+        general: "Drink warm fluids frequently. Avoid exposure to cold dust and drafts. Take full antibiotic course as prescribed.",
+        dietary: "Light, warm meals. Avoid cold or deeply fried items.",
+        follow_up: "5 days or earlier if fever persists",
+        emergency_warning: "Seek immediate medical attention if experiencing high fever > 103°F or breathing difficulty."
+    }
+};
+
+// ==========================================================================
+// STEPPER NAVIGATION & UI LOGIC
+// ==========================================================================
+
+function navigateToStep(stepNum) {
+    if (stepNum < 1 || stepNum > 5) return;
+    currentStep = stepNum;
+
+    // Update form panels
+    for (let i = 1; i <= 5; i++) {
+        const sec = document.getElementById('stepSection-' + i);
+        const ind = document.getElementById('stepIndicator-' + i);
+        const conn = document.getElementById('stepConn-' + i);
+
+        if (sec) sec.classList.toggle('active', i === stepNum);
+        if (ind) {
+            ind.classList.toggle('active', i === stepNum);
+            ind.classList.toggle('completed', i < stepNum);
+        }
+        if (conn) {
+            conn.classList.toggle('completed', i < stepNum);
         }
     }
 
-    function copyText() {
-        const textArea = document.getElementById('extracted-text');
-        textArea.select();
-        document.execCommand('copy');
-        alert('Text copied to clipboard');
+    if (stepNum === 5) {
+        populateReviewSection();
     }
+}
 
-    function toggleMedicationDetails(header) {
-        const card = header.parentElement;
-        const details = card.querySelector('.medication-details');
-        const icon = card.querySelector('.toggle-icon');
-        
-        if (details.style.maxHeight) {
-            details.style.maxHeight = null;
-            details.style.padding = '0 20px';
-            icon.style.transform = 'rotate(0deg)';
-        } else {
-            details.style.maxHeight = details.scrollHeight + 'px';
-            details.style.padding = '0 20px 20px';
-            icon.style.transform = 'rotate(180deg)';
-        }
-    }
-
-    function analyzeText() {
-        const text = document.getElementById("extracted-text").value;
-        if (!text.trim()) {
-            alert("No text to analyze. Please upload a valid prescription.");
+function validateAndGo(current, next) {
+    if (current === 1) {
+        const name = document.getElementById('patName').value.trim();
+        if (!name) {
+            showToast('Please enter patient name', 'error');
+            document.getElementById('patName').focus();
             return;
         }
+    } else if (current === 2) {
+        const diagnosis = document.getElementById('clinDiagnosis').value.trim();
+        if (!diagnosis) {
+            showToast('Please enter a diagnosis', 'error');
+            document.getElementById('clinDiagnosis').focus();
+            return;
+        }
+    } else if (current === 3) {
+        if (prescriptionState.medicines.length === 0) {
+            showToast('Please add at least one medication', 'warning');
+            return;
+        }
+        // Save current input values
+        syncMedicinesFromInputs();
+    }
 
+    syncStateFromForm();
+    navigateToStep(next);
+}
+
+// ==========================================================================
+// PATIENT SELECTION & MANAGEMENT
+// ==========================================================================
+
+function selectQuickPatient(name, age, gender, id, phone, allergies, currentMeds, element) {
+    document.querySelectorAll('.patient-quick-card').forEach(c => c.classList.remove('selected'));
+    if (element) element.classList.add('selected');
+
+    document.getElementById('patName').value = name;
+    document.getElementById('patAge').value = age;
+    document.getElementById('patGender').value = gender;
+    document.getElementById('patId').value = id;
+    document.getElementById('patPhone').value = phone;
+    document.getElementById('patAllergies').value = allergies;
+
+    updateLivePreview();
+}
+
+function syncStateFromForm() {
+    prescriptionState.patient.name = document.getElementById('patName')?.value || '';
+    prescriptionState.patient.age = document.getElementById('patAge')?.value || '';
+    prescriptionState.patient.gender = document.getElementById('patGender')?.value || '';
+    prescriptionState.patient.id = document.getElementById('patId')?.value || '';
+    prescriptionState.patient.allergies = document.getElementById('patAllergies')?.value || '';
+    prescriptionState.patient.phone = document.getElementById('patPhone')?.value || '';
+
+    prescriptionState.clinical.chief_complaint = document.getElementById('clinChiefComplaint')?.value || '';
+    prescriptionState.clinical.symptoms = document.getElementById('clinSymptoms')?.value || '';
+    prescriptionState.clinical.diagnosis = document.getElementById('clinDiagnosis')?.value || '';
+    prescriptionState.clinical.notes = document.getElementById('clinNotes')?.value || '';
+
+    prescriptionState.instructions.general = document.getElementById('instGeneral')?.value || '';
+    prescriptionState.instructions.dietary = document.getElementById('instDiet')?.value || '';
+    prescriptionState.instructions.follow_up = document.getElementById('instFollowUp')?.value || '';
+    prescriptionState.instructions.emergency_warning = document.getElementById('instWarning')?.value || '';
+}
+
+function updateLivePreview() {
+    syncStateFromForm();
+
+    const name = prescriptionState.patient.name || 'Patient Name';
+    const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'PT';
+
+    document.getElementById('summaryName').textContent = name;
+    document.getElementById('summaryAvatar').textContent = initials;
+    document.getElementById('summaryId').textContent = 'ID: ' + (prescriptionState.patient.id || 'N/A');
+    document.getElementById('summaryMeta').textContent = `${prescriptionState.patient.age || '--'} Years • ${prescriptionState.patient.gender || '--'}`;
+    document.getElementById('summaryAllergyBadge').textContent = 'Allergy: ' + (prescriptionState.patient.allergies || 'None recorded');
+
+    document.getElementById('sidePatName').textContent = name;
+    document.getElementById('sideDiagnosis').textContent = prescriptionState.clinical.diagnosis || 'Pending Diagnosis';
+    document.getElementById('sideMedCount').textContent = prescriptionState.medicines.length + ' Items';
+    document.getElementById('sideFollowUp').textContent = prescriptionState.instructions.follow_up || 'As needed';
+}
+
+// ==========================================================================
+// MEDICINES (REPEATABLE MEDICATION BUILDER)
+// ==========================================================================
+
+function renderMedicinesList() {
+    const container = document.getElementById('medicationsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    prescriptionState.medicines.forEach((med, idx) => {
+        const item = document.createElement('div');
+        item.className = 'med-item-card';
+        item.id = `medRow-${idx}`;
+        item.innerHTML = `
+            <div class="med-item-header">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="med-item-num">#${idx + 1}</span>
+                    <strong style="color: var(--text-primary); font-size: 14px;">${med.name || 'Medication'}</strong>
+                </div>
+                <button type="button" class="btn btn-ghost btn-xs" style="color: var(--error);" onclick="removeMedicineRow(${idx})" title="Remove">
+                    <i class="fas fa-trash-alt"></i> Remove
+                </button>
+            </div>
+
+            <div class="med-grid-form">
+                <div class="form-group autocomplete-wrap" style="margin-bottom:0;">
+                    <label class="form-label">Medicine Name <span style="color:var(--error);">*</span></label>
+                    <input type="text" class="form-input med-name-input" value="${med.name}" placeholder="Search medicine..." oninput="handleMedSearch(this, ${idx})" autocomplete="off">
+                    <div class="autocomplete-dropdown" id="autoDropdown-${idx}"></div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">Strength</label>
+                    <input type="text" class="form-input med-strength-input" value="${med.strength}" placeholder="500 mg" oninput="syncMedicinesFromInputs()">
+                </div>
+
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">Form</label>
+                    <select class="form-select med-form-select" onchange="syncMedicinesFromInputs()">
+                        ${['Tablet', 'Capsule', 'Syrup', 'Injection', 'Ointment', 'Drops', 'Inhaler', 'Spray'].map(f => `<option value="${f}" ${med.form === f ? 'selected' : ''}>${f}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+
+            <div class="med-grid-dosage">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">Dose</label>
+                    <input type="text" class="form-input med-dose-input" value="${med.dose}" placeholder="1 tablet" oninput="syncMedicinesFromInputs()">
+                </div>
+
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">Frequency</label>
+                    <select class="form-select med-freq-select" onchange="syncMedicinesFromInputs()">
+                        ${[
+                            'Once daily',
+                            'Twice daily',
+                            '3 times daily',
+                            '4 times daily',
+                            'Every 8 hours',
+                            'As needed (SOS)',
+                            'At bedtime'
+                        ].map(freq => `<option value="${freq}" ${med.frequency === freq ? 'selected' : ''}>${freq}</option>`).join('')}
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">Duration</label>
+                    <input type="text" class="form-input med-dur-input" value="${med.duration}" placeholder="5 days" oninput="syncMedicinesFromInputs()">
+                </div>
+
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">Timing / Food</label>
+                    <select class="form-select med-timing-select" onchange="syncMedicinesFromInputs()">
+                        ${['After food', 'Before food', 'With food', 'Empty stomach', 'At bedtime', 'As directed'].map(t => `<option value="${t}" ${med.timing === t ? 'selected' : ''}>${t}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-top: 12px;">
+                <input type="text" class="form-input med-notes-input" value="${med.instructions || ''}" placeholder="Specific notes (e.g. Complete full course, drink with warm water)" style="font-size: 12.5px; padding: 7px 12px;" oninput="syncMedicinesFromInputs()">
+            </div>
+        `;
+        container.appendChild(item);
+    });
+
+    updateLivePreview();
+}
+
+function addNewMedicineRow() {
+    prescriptionState.medicines.push({
+        name: "",
+        strength: "500 mg",
+        form: "Tablet",
+        dose: "1 tablet",
+        frequency: "Twice daily",
+        duration: "5 days",
+        route: "Oral",
+        timing: "After food",
+        instructions: ""
+    });
+    renderMedicinesList();
+}
+
+function addPresetMedicine(name, strength, form, dose, freq, dur, timing) {
+    prescriptionState.medicines.push({
+        name: name,
+        strength: strength,
+        form: form,
+        dose: dose,
+        frequency: freq,
+        duration: dur,
+        route: "Oral",
+        timing: timing,
+        instructions: ""
+    });
+    renderMedicinesList();
+    showToast(`Added ${name} to prescription`, 'info');
+}
+
+function removeMedicineRow(idx) {
+    prescriptionState.medicines.splice(idx, 1);
+    renderMedicinesList();
+}
+
+function syncMedicinesFromInputs() {
+    const rows = document.querySelectorAll('.med-item-card');
+    rows.forEach((row, idx) => {
+        if (prescriptionState.medicines[idx]) {
+            prescriptionState.medicines[idx].name = row.querySelector('.med-name-input')?.value || '';
+            prescriptionState.medicines[idx].strength = row.querySelector('.med-strength-input')?.value || '';
+            prescriptionState.medicines[idx].form = row.querySelector('.med-form-select')?.value || 'Tablet';
+            prescriptionState.medicines[idx].dose = row.querySelector('.med-dose-input')?.value || '1 tablet';
+            prescriptionState.medicines[idx].frequency = row.querySelector('.med-freq-select')?.value || 'Once daily';
+            prescriptionState.medicines[idx].duration = row.querySelector('.med-dur-input')?.value || '5 days';
+            prescriptionState.medicines[idx].timing = row.querySelector('.med-timing-select')?.value || 'After food';
+            prescriptionState.medicines[idx].instructions = row.querySelector('.med-notes-input')?.value || '';
+        }
+    });
+    updateLivePreview();
+}
+
+// Medicine Live Autocomplete
+let debounceTimeout = null;
+function handleMedSearch(input, idx) {
+    const query = input.value.trim();
+    const dropdown = document.getElementById(`autoDropdown-${idx}`);
+    if (!dropdown) return;
+
+    if (query.length < 2) {
+        dropdown.style.display = 'none';
+        syncMedicinesFromInputs();
+        return;
+    }
+
+    clearTimeout(debounceTimeout);
+    debounceTimeout = setTimeout(async () => {
         try {
-            const chatbotWindow = window.open("/chatbot", "_blank");
-            chatbotWindow.onload = () => {
-                const chatbotInput = chatbotWindow.document.getElementById("user-question");
-                const chatbotForm = chatbotWindow.document.getElementById("chatbot-form");
+            const res = await fetch(`/api/medicine-autocomplete?query=${encodeURIComponent(query)}`);
+            const data = await res.json();
 
-                if (chatbotInput && chatbotForm) {
-                    chatbotInput.value = text;
-                    chatbotForm.dispatchEvent(new Event("submit"));
-                    alert("Prescription data transferred to the chatbot.");
-                } else {
-                    alert("Chatbot input field not found. Please ensure the chatbot page is open.");
-                }
-            };
-        } catch (error) {
-            console.error("Error transferring data to chatbot:", error);
-            alert("Failed to transfer prescription data to the chatbot.");
+            dropdown.innerHTML = '';
+            if (data && data.length > 0) {
+                dropdown.style.display = 'block';
+                data.forEach(item => {
+                    const option = document.createElement('div');
+                    option.className = 'autocomplete-item';
+                    option.innerHTML = `
+                        <div class="autocomplete-item-name">${item.name}</div>
+                        <div class="autocomplete-item-meta">${item.strength} • ${item.form}</div>
+                    `;
+                    option.onclick = () => {
+                        input.value = item.name;
+                        const row = document.getElementById(`medRow-${idx}`);
+                        if (row) {
+                            if (row.querySelector('.med-strength-input')) row.querySelector('.med-strength-input').value = item.strength || '500 mg';
+                            if (row.querySelector('.med-form-select')) row.querySelector('.med-form-select').value = item.form || 'Tablet';
+                            if (row.querySelector('.med-dose-input')) row.querySelector('.med-dose-input').value = item.dose || '1 tablet';
+                            if (row.querySelector('.med-freq-select')) row.querySelector('.med-freq-select').value = item.frequency || 'Twice daily';
+                            if (row.querySelector('.med-dur-input')) row.querySelector('.med-dur-input').value = item.duration || '5 days';
+                            if (row.querySelector('.med-timing-select')) row.querySelector('.med-timing-select').value = item.timing || 'After food';
+                            if (row.querySelector('.med-notes-input')) row.querySelector('.med-notes-input').value = item.instructions || '';
+                        }
+                        dropdown.style.display = 'none';
+                        syncMedicinesFromInputs();
+                    };
+                    dropdown.appendChild(option);
+                });
+            } else {
+                dropdown.style.display = 'none';
+            }
+        } catch (err) {
+            dropdown.style.display = 'none';
+        }
+    }, 200);
+
+    syncMedicinesFromInputs();
+}
+
+// ==========================================================================
+// STEP 5: REVIEW POPULATION
+// ==========================================================================
+
+function populateReviewSection() {
+    syncStateFromForm();
+    syncMedicinesFromInputs();
+
+    document.getElementById('revName').textContent = prescriptionState.patient.name;
+    document.getElementById('revId').textContent = prescriptionState.patient.id || 'N/A';
+    document.getElementById('revAgeGender').textContent = `${prescriptionState.patient.age} yrs • ${prescriptionState.patient.gender}`;
+    document.getElementById('revAllergies').textContent = prescriptionState.patient.allergies || 'None';
+
+    document.getElementById('revDiagnosis').textContent = prescriptionState.clinical.diagnosis;
+    document.getElementById('revChiefComplaint').textContent = 'Complaint: ' + (prescriptionState.clinical.chief_complaint || 'N/A');
+
+    const medListWrap = document.getElementById('revMedicationsList');
+    medListWrap.innerHTML = '';
+    prescriptionState.medicines.forEach((med, i) => {
+        const row = document.createElement('div');
+        row.style.padding = '8px 12px';
+        row.style.background = 'var(--surface-1)';
+        row.style.borderRadius = 'var(--radius-md)';
+        row.style.display = 'flex';
+        row.style.justifyContent = 'space-between';
+        row.style.alignItems = 'center';
+        row.innerHTML = `
+            <div>
+                <strong>${i + 1}. ${med.name}</strong> <span style="color:var(--text-muted); font-size:12px;">(${med.strength}, ${med.form})</span>
+                <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
+                    ${med.dose} • ${med.frequency} • ${med.duration} • <em>${med.timing}</em>
+                </div>
+            </div>
+            <span class="badge badge-accent">${med.frequency}</span>
+        `;
+        medListWrap.appendChild(row);
+    });
+
+    document.getElementById('revGeneralAdvice').textContent = prescriptionState.instructions.general || 'Standard rest and fluid intake.';
+    document.getElementById('revFollowUp').textContent = prescriptionState.instructions.follow_up || 'As needed';
+}
+
+// ==========================================================================
+// SUBMIT & GENERATE PRESCRIPTION
+// ==========================================================================
+
+async function submitGeneratePrescription() {
+    syncStateFromForm();
+    syncMedicinesFromInputs();
+
+    // Show loading modal
+    document.getElementById('rxLoadingModal').style.display = 'flex';
+
+    try {
+        const response = await fetch('/api/generate-prescription', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(prescriptionState)
+        });
+
+        const data = await response.json();
+        document.getElementById('rxLoadingModal').style.display = 'none';
+
+        if (data.success && data.prescription) {
+            renderFinalPrescriptionDocument(data.prescription, data.pdf_url);
+            showToast('Prescription generated successfully!', 'success');
+        } else {
+            showToast(data.error || 'Failed to generate prescription', 'error');
+        }
+    } catch (err) {
+        document.getElementById('rxLoadingModal').style.display = 'none';
+        showToast('Network error while generating prescription', 'error');
+    }
+}
+
+function renderFinalPrescriptionDocument(rx, pdfUrl) {
+    document.getElementById('generatorFormWrap').style.display = 'none';
+    document.getElementById('stepperNav').style.display = 'none';
+    document.getElementById('prescriptionResultView').style.display = 'block';
+
+    document.getElementById('generatedRxId').textContent = 'ID: ' + rx.rx_id;
+    document.getElementById('docPatName').textContent = rx.patient.name;
+    document.getElementById('docPatAgeGender').textContent = `${rx.patient.age || '--'} Y / ${rx.patient.gender || '--'}`;
+    document.getElementById('docPatId').textContent = rx.patient.id || 'N/A';
+    document.getElementById('docRxDate').textContent = rx.date || 'Today';
+
+    document.getElementById('docDiagnosis').textContent = rx.clinical.diagnosis;
+    document.getElementById('docNotes').textContent = 'Notes: ' + (rx.clinical.notes || rx.clinical.chief_complaint || 'None');
+
+    const tbody = document.getElementById('docMedTableBody');
+    tbody.innerHTML = '';
+    rx.medicines.forEach((m, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="font-weight:700; color:#64748B;">${idx + 1}</td>
+            <td>
+                <div class="rx-med-name-cell">${m.name} ${m.strength || ''}</div>
+                <div style="font-size:11.5px; color:#64748B;">Form: ${m.form || 'Tablet'}</div>
+                ${m.instructions ? `<div class="rx-med-instruction-tag"><em>${m.instructions}</em></div>` : ''}
+            </td>
+            <td>
+                <strong style="color:#0F172A;">${m.dose}</strong><br>
+                <span style="font-size:12px; color:#475569;">${m.frequency}</span>
+            </td>
+            <td style="font-weight:600; color:#0F172A;">${m.duration}</td>
+            <td style="font-size:12px; font-weight:600; color:#1B6CA8;">${m.timing}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById('docInstructions').textContent = rx.instructions.general || 'Standard care instructions.';
+    document.getElementById('docFollowUp').textContent = 'Follow-up: ' + (rx.instructions.follow_up || 'As needed');
+
+    if (pdfUrl) {
+        document.getElementById('btnDownloadPdfLink').href = pdfUrl;
+    }
+}
+
+function returnToEditMode() {
+    document.getElementById('prescriptionResultView').style.display = 'none';
+    document.getElementById('generatorFormWrap').style.display = 'grid';
+    document.getElementById('stepperNav').style.display = 'flex';
+    navigateToStep(3); // return to medicines
+}
+
+function resetNewPrescription() {
+    document.getElementById('prescriptionResultView').style.display = 'none';
+    document.getElementById('generatorFormWrap').style.display = 'grid';
+    document.getElementById('stepperNav').style.display = 'flex';
+    prescriptionState.medicines = [];
+    addNewMedicineRow();
+    navigateToStep(1);
+}
+
+function printPrescriptionDoc() {
+    window.print();
+}
+
+// Switch between Generator and OCR scanner
+function switchMainMode(mode) {
+    document.getElementById('btnModeGenerator').classList.toggle('active', mode === 'generator');
+    document.getElementById('btnModeScanner').classList.toggle('active', mode === 'scanner');
+
+    document.getElementById('sectionDigitalGenerator').style.display = mode === 'generator' ? 'block' : 'none';
+    document.getElementById('sectionScanOCR').style.display = mode === 'scanner' ? 'block' : 'none';
+}
+
+function openRecentHistoryModal() {
+    document.getElementById('recentHistoryModal').style.display = 'flex';
+}
+
+function closeRecentHistoryModal() {
+    document.getElementById('recentHistoryModal').style.display = 'none';
+}
+
+function loadExistingPrescription(rx) {
+    closeRecentHistoryModal();
+    renderFinalPrescriptionDocument(rx, `/download_pdf?text=${encodeURIComponent(rx.formatted_text || '')}`);
+}
+
+// Toggle between Structured Form View and Raw Transcript
+function toggleOcrView(view) {
+    const formCont = document.getElementById('ocrFormContainer');
+    const rawCont = document.getElementById('ocrRawContainer');
+    const btnForm = document.getElementById('btnOcrFormView');
+    const btnRaw = document.getElementById('btnOcrRawView');
+
+    if (view === 'form') {
+        if (formCont) formCont.style.display = 'block';
+        if (rawCont) rawCont.style.display = 'none';
+        if (btnForm) btnForm.classList.add('active');
+        if (btnRaw) btnRaw.classList.remove('active');
+    } else {
+        if (formCont) formCont.style.display = 'none';
+        if (rawCont) rawCont.style.display = 'block';
+        if (btnForm) btnForm.classList.remove('active');
+        if (btnRaw) btnRaw.classList.add('active');
+    }
+}
+
+// Copy raw transcript to clipboard
+function copyOcrTranscript(btn) {
+    const textEl = document.getElementById('rawOcrTextContent');
+    if (!textEl) return;
+    navigator.clipboard.writeText(textEl.textContent).then(() => {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check" style="color:var(--success);"></i> Copied!';
+        setTimeout(() => { btn.innerHTML = orig; }, 2000);
+    });
+}
+
+// Print the structured prescription form
+function printScannedForm() {
+    window.print();
+}
+
+// Load parsed OCR prescription directly into interactive Generator form
+function loadScannedRxIntoGenerator(rx) {
+    if (!rx || typeof rx !== 'object') {
+        switchMainMode('generator');
+        return;
+    }
+
+    // 1. Patient Fields
+    if (rx.patient) {
+        if (rx.patient.name && document.getElementById('patName')) {
+            document.getElementById('patName').value = rx.patient.name;
+        }
+        if (rx.patient.age && document.getElementById('patAge')) {
+            document.getElementById('patAge').value = rx.patient.age;
+        }
+        if (rx.patient.gender && document.getElementById('patGender')) {
+            const gen = rx.patient.gender.toLowerCase();
+            document.getElementById('patGender').value = gen.includes('female') || gen === 'f' ? 'Female' : 'Male';
+        }
+        if (rx.patient.allergies && document.getElementById('patAllergies')) {
+            document.getElementById('patAllergies').value = rx.patient.allergies;
         }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const uploadContainer = document.getElementById('upload-container');
-        const fileUpload = document.getElementById('file-upload');
-        const uploadForm = document.getElementById('upload-form');
+    // 2. Clinical Fields
+    if (rx.clinical) {
+        if (rx.clinical.diagnosis && document.getElementById('clinDiagnosis')) {
+            document.getElementById('clinDiagnosis').value = rx.clinical.diagnosis;
+        }
+        if (rx.clinical.symptoms && document.getElementById('clinSymptoms')) {
+            document.getElementById('clinSymptoms').value = rx.clinical.symptoms;
+        }
+        if (rx.clinical.notes && document.getElementById('clinNotes')) {
+            document.getElementById('clinNotes').value = rx.clinical.notes;
+        }
+        if (rx.clinical.symptoms && document.getElementById('clinChiefComplaint')) {
+            document.getElementById('clinChiefComplaint').value = rx.clinical.symptoms;
+        }
+    }
 
-        uploadContainer.addEventListener('dragover', (event) => {
-            event.preventDefault();
-            uploadContainer.classList.add('drag-over');
-        });
+    // 3. Medicines List
+    if (rx.medicines && Array.isArray(rx.medicines) && rx.medicines.length > 0) {
+        prescriptionState.medicines = rx.medicines.map(m => ({
+            name: m.name || '',
+            strength: m.strength || '',
+            form: m.form || 'Tablet',
+            dose: m.dose || '1 tablet',
+            frequency: m.frequency || 'Twice daily',
+            duration: m.duration || '5 days',
+            timing: m.timing || 'After food',
+            instructions: m.instructions || ''
+        }));
+        renderMedicinesList();
+    }
 
-        uploadContainer.addEventListener('dragleave', () => {
-            uploadContainer.classList.remove('drag-over');
-        });
+    // 4. Instructions
+    if (rx.instructions) {
+        if (rx.instructions.general && document.getElementById('instGeneral')) {
+            document.getElementById('instGeneral').value = rx.instructions.general;
+        }
+        if (rx.instructions.diet && document.getElementById('instDiet')) {
+            document.getElementById('instDiet').value = rx.instructions.diet;
+        }
+        if (rx.instructions.follow_up && document.getElementById('instFollowUp')) {
+            document.getElementById('instFollowUp').value = rx.instructions.follow_up;
+        }
+    }
 
-        uploadContainer.addEventListener('drop', (event) => {
-            event.preventDefault();
-            uploadContainer.classList.remove('drag-over');
-            const files = event.dataTransfer.files;
-            if (files.length > 0) {
-                fileUpload.files = files;
-                previewImage({ target: { files: files } });
+    // Sync state and switch tabs
+    syncStateFromForm();
+    updateLivePreview();
+    switchMainMode('generator');
+    navigateToStep(3); // Jump to medicines step so user can review and edit meds
+
+    if (typeof showToast === 'function') {
+        showToast('Prescription loaded into Generator Form! You can edit and customize.', 'success');
+    }
+}
+
+// Upload & OCR File Handling
+function handleFileSelected(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const preview = document.getElementById('upload-preview');
+        const title = document.getElementById('uploadTitle');
+        const icon = document.getElementById('uploadIcon');
+        const info = document.getElementById('upload-file-info');
+
+        title.textContent = file.name;
+        if (info) {
+            info.textContent = `${(file.size / 1024).toFixed(1)} KB • ${file.type || 'Document'}`;
+            info.style.display = 'block';
+        }
+
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                if (preview) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                }
+                if (icon) icon.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            if (preview) preview.style.display = 'none';
+            if (icon) {
+                icon.style.display = 'block';
+                icon.innerHTML = '<i class="fas fa-file-pdf" style="color: #ef4444;"></i>';
             }
-        });
-    });
-</script>
+        }
+    }
+}
 
-<style>
-    .medication-card:hover {
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+function handleUploadSubmit(e) {
+    const fileInput = document.getElementById('file-upload');
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        e.preventDefault();
+        alert('Please select or drop a prescription image or PDF file first.');
+        return false;
     }
-    
-    .refill-btn:hover {
-        background: #e9ecef !important;
+    const btn = document.getElementById('processBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing Prescription with Medical Vision AI...';
     }
-    
-    .medication-header:hover {
-        background: #f0f0f0 !important;
+    return true;
+}
+
+// Drag & Drop Setup
+function setupDropZone() {
+    const dropZone = document.getElementById('uploadZone');
+    if (!dropZone) return;
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.add('dragover');
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove('dragover');
+        }, false);
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files && files.length > 0) {
+            const fileInput = document.getElementById('file-upload');
+            fileInput.files = files;
+            handleFileSelected(fileInput);
+        }
+    }, false);
+}
+
+// Initialize on DOM load
+document.addEventListener('DOMContentLoaded', function() {
+    renderMedicinesList();
+    updateLivePreview();
+    setupDropZone();
+
+    // Auto-switch to scanner mode if OCR result exists or query param is present
+    {% if text %}
+    switchMainMode('scanner');
+    {% else %}
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('mode') === 'scanner') {
+        switchMainMode('scanner');
     }
-</style>
+    {% endif %}
+});
+</script>
 {% endblock %}

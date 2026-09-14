@@ -1,364 +1,291 @@
-{% extends "base.html" %}
-
+﻿{% extends "base.html" %}
 {% block title %}AI Consultant{% endblock %}
+{% block page_title %}AI Consultant{% endblock %}
+
+{% block extra_css %}
+<style>
+.consultant-layout { display: grid; grid-template-columns: 380px 1fr; gap: 0; min-height: calc(100vh - 64px); }
+.consultant-form-panel { border-right: var(--border); padding: 32px 28px; overflow-y: auto; background: var(--surface-0); }
+.consultant-results-panel { padding: 32px; overflow-y: auto; background: var(--surface-bg); }
+
+.panel-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+.panel-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; line-height: 1.6; }
+
+/* Symptom tags */
+.symptom-tag { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent-border); border-radius: var(--radius-pill); padding: 3px 10px; font-size: 12px; font-weight: 500; margin: 2px; cursor: default; }
+.symptom-tag button { background: none; border: none; cursor: pointer; color: var(--accent); font-size: 13px; padding: 0; line-height: 1; }
+
+/* Results */
+.result-header { display: flex; align-items: flex-start; gap: 16px; padding: 20px 24px; background: var(--surface-0); border: var(--border); border-radius: var(--radius-lg); margin-bottom: 20px; }
+.result-diagnosis-badge { width: 48px; height: 48px; border-radius: var(--radius-md); background: var(--error-light); display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--error); flex-shrink: 0; }
+.result-disease-name { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+.result-patient-meta { font-size: 13px; color: var(--text-muted); display: flex; gap: 12px; flex-wrap: wrap; }
+.result-patient-meta span { display: flex; align-items: center; gap: 5px; }
+
+.result-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.result-section { background: var(--surface-0); border: var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.result-section-header { padding: 14px 18px; border-bottom: var(--border); display: flex; align-items: center; gap: 10px; }
+.result-section-icon { width: 28px; height: 28px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+.result-section-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.result-section-body { padding: 14px 18px; }
+.result-item { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text-secondary); padding: 4px 0; line-height: 1.5; }
+.result-item::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.5; flex-shrink: 0; margin-top: 7px; }
+
+.no-results { display: flex; align-items: center; justify-content: center; min-height: 400px; }
+
+@media (max-width: 1024px) {
+  .consultant-layout { grid-template-columns: 1fr; }
+  .consultant-form-panel { border-right: none; border-bottom: var(--border); }
+  .result-sections { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="hero" style="margin-bottom: 30px;">
-    <h1>Med Script's <span>AI</span> Consultant</h1>
-    <p>Our AI Consultant intelligently analyzes symptoms to predict potential diseases and provide personalized health recommendations. With insights on medications, precautions, diets, and workouts, it empowers users with data-driven healthcare guidance.</p>
-</div>
-<div class="main-container fade-in" style="gap: 40px;">
-    <div class="form-container shadow-box slide-in" style="background: #f8fbff; border: 1px solid #e3eaf5; border-radius: 18px; box-shadow: 0 6px 24px rgba(64,152,215,0.08);">
-        <h2 style="text-align: center; color: #4098d7; margin-bottom: 24px;">Enter Your Details</h2>
-        <form action="/predict" method="post">
+<div class="consultant-layout">
+    <!-- LEFT: Form -->
+    <div class="consultant-form-panel">
+        <div class="panel-title">AI Consultant</div>
+        <div class="panel-desc">Enter your details and symptoms. Our AI analyzes patterns from thousands of clinical cases to provide health insights.</div>
+
+        <form action="/predict" method="post" id="consultForm">
             <div class="form-group">
-                <label for="name"><i class="fas fa-user"></i> Name:</label>
-                <input type="text" class="form-control custom-input" id="name" name="name" placeholder="Enter your name" required>
+                <label class="form-label" for="name">Full Name</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-user input-icon"></i>
+                    <input type="text" class="form-input" id="name" name="name" placeholder="Enter your name" value="{{ name or '' }}" required>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="age"><i class="fas fa-birthday-cake"></i> Age:</label>
-                <input type="number" class="form-control custom-input" id="age" name="age" placeholder="Enter your age" required>
+
+            <div class="form-row">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" for="age">Age</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-birthday-cake input-icon"></i>
+                        <input type="number" class="form-input" id="age" name="age" placeholder="Age" value="{{ age or '' }}" min="1" max="120" required>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" for="location">Location</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-map-marker-alt input-icon"></i>
+                        <input type="text" class="form-input" id="location" name="location" placeholder="City" value="{{ location or '' }}" required>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="location"><i class="fas fa-map-marker-alt"></i> Location:</label>
-                <input type="text" class="form-control custom-input" id="location" name="location" placeholder="Enter your location" required>
+
+            <div class="form-group" style="margin-top: 16px;">
+                <label class="form-label" for="symptoms">Symptoms</label>
+                <div style="position: relative;">
+                    <div class="input-with-icon">
+                        <i class="fas fa-stethoscope input-icon"></i>
+                        <input type="text" class="form-input" id="symptoms" name="symptoms" placeholder="e.g. itching, fatigue, headache..." value="{{ symptoms or '' }}">
+                    </div>
+                    <button type="button" id="micBtn" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 15px;" title="Voice input">
+                        <i class="fas fa-microphone" id="micIcon"></i>
+                    </button>
+                </div>
+                <div class="form-hint">Separate multiple symptoms with commas</div>
             </div>
-            <div class="form-group">
-                <label for="symptoms"><i class="fas fa-stethoscope"></i> Symptoms:</label>
-                <div class="input-group">
-                    <input type="text" class="form-control custom-input" id="symptoms" name="symptoms" placeholder="Type symptoms such as itching, sleeping, aching etc">
-                    <button type="button" id="startSpeechRecognition" class="mic-button" title="Speak symptoms">
-                        <i class="fas fa-microphone"></i>
+
+            {% if message %}
+            <div style="background: var(--error-light); border: 1px solid var(--error-border); border-radius: var(--radius-md); padding: 10px 14px; font-size: 13px; color: var(--error); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-exclamation-circle"></i> {{ message }}
+            </div>
+            {% endif %}
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg" id="predictBtn" style="margin-top: 8px;">
+                <i class="fas fa-brain"></i> Analyze Symptoms
+            </button>
+        </form>
+
+        <!-- Common symptoms quick select -->
+        <div style="margin-top: 24px; padding-top: 20px; border-top: var(--border);">
+            <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); margin-bottom: 10px;">Common Symptoms</div>
+            <div>
+                {% set common = ['Headache', 'Fever', 'Fatigue', 'Cough', 'Nausea', 'Chest pain', 'Dizziness', 'Sore throat'] %}
+                {% for sym in common %}
+                <button type="button" class="symptom-tag" onclick="addSymptom('{{ sym }}')">
+                    {{ sym }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div style="margin-top: 24px; padding: 14px; background: var(--warning-light); border: 1px solid var(--warning-border); border-radius: var(--radius-md);">
+            <div style="font-size: 12px; font-weight: 600; color: var(--warning); display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                <i class="fas fa-exclamation-triangle"></i> Medical Disclaimer
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">This AI tool provides general health information only. Always consult a qualified healthcare professional for medical advice.</div>
+        </div>
+    </div>
+
+    <!-- RIGHT: Results -->
+    <div class="consultant-results-panel">
+        {% if predictions %}
+            {% for pred in predictions %}
+            <div style="margin-bottom: 32px;">
+                <!-- Result Header -->
+                <div class="result-header">
+                    <div class="result-diagnosis-badge">
+                        <i class="fas fa-diagnoses"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <div class="result-disease-name">{{ pred.predicted_disease }}</div>
+                        <div class="result-patient-meta">
+                            <span><i class="fas fa-user"></i> {{ name }}</span>
+                            <span><i class="fas fa-birthday-cake"></i> {{ age }} years</span>
+                            <span><i class="fas fa-map-marker-alt"></i> {{ location }}</span>
+                            <span><i class="fas fa-stethoscope"></i> {{ symptoms }}</span>
+                        </div>
+                    </div>
+                    <span class="badge badge-error">Predicted</span>
+                </div>
+
+                <!-- Result Sections Grid -->
+                <div class="result-sections">
+                    <!-- Description -->
+                    {% if pred.dis_des %}
+                    <div class="result-section">
+                        <div class="result-section-header">
+                            <div class="result-section-icon" style="background: var(--accent-light); color: var(--accent);"><i class="fas fa-info-circle"></i></div>
+                            <div class="result-section-title">About This Condition</div>
+                        </div>
+                        <div class="result-section-body">
+                            <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.7;">{{ pred.dis_des }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Precautions -->
+                    {% if pred.precautions %}
+                    <div class="result-section">
+                        <div class="result-section-header">
+                            <div class="result-section-icon" style="background: var(--warning-light); color: var(--warning);"><i class="fas fa-shield-alt"></i></div>
+                            <div class="result-section-title">Precautions</div>
+                        </div>
+                        <div class="result-section-body">
+                            {% for p in pred.precautions %}
+                            <div class="result-item">{{ p }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Medications -->
+                    {% if pred.medications %}
+                    <div class="result-section">
+                        <div class="result-section-header">
+                            <div class="result-section-icon" style="background: #F5F3FF; color: #7C3AED;"><i class="fas fa-pills"></i></div>
+                            <div class="result-section-title">Medications</div>
+                        </div>
+                        <div class="result-section-body">
+                            {% for m in pred.medications %}
+                            <div class="result-item">{{ m }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Diet -->
+                    {% if pred.diets %}
+                    <div class="result-section">
+                        <div class="result-section-header">
+                            <div class="result-section-icon" style="background: var(--success-light); color: var(--success);"><i class="fas fa-apple-alt"></i></div>
+                            <div class="result-section-title">Diet Recommendations</div>
+                        </div>
+                        <div class="result-section-body">
+                            {% for d in pred.diets %}
+                            <div class="result-item">{{ d }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Workout -->
+                    {% if pred.workout %}
+                    <div class="result-section">
+                        <div class="result-section-header">
+                            <div class="result-section-icon" style="background: #FFF7ED; color: #EA580C;"><i class="fas fa-running"></i></div>
+                            <div class="result-section-title">Activity &amp; Workout</div>
+                        </div>
+                        <div class="result-section-body">
+                            {% for w in pred.workout %}
+                            <div class="result-item">{{ w }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- CTA -->
+                <div style="display: flex; gap: 10px; margin-top: 16px;">
+                    <a href="{{ url_for('doctor_consultation') }}" class="btn btn-primary">
+                        <i class="fas fa-user-md"></i> Consult a Doctor
+                    </a>
+                    <button class="btn btn-secondary" onclick="window.print()">
+                        <i class="fas fa-print"></i> Print Report
                     </button>
                 </div>
             </div>
-            {% if message %}
-            <p style="color: #dc3545; text-align: center;">{{ message }}</p>
-            {% endif %}
-            <button type="submit" class="custom-button" style="background-color: #FF2052; width: 100%; margin-top: 18px;">Predict</button>
-        </form>
-    </div>
-    <div class="results-container shadow-box fade-in" style="border: none; background: #f8fbff; border-radius: 18px; box-shadow: 0 6px 24px rgba(64,152,215,0.08);">
-        {% if predictions %}
-            {% for pred in predictions %}
-            <div class="custom-card mt-4" style="border: none; background: #fff; border-radius: 16px; box-shadow: 0 4px 16px rgba(64,152,215,0.10); margin-bottom: 32px;">
-                <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;">
-                    <div style="display: flex; gap: 18px; flex-wrap: wrap;">
-                        <span style="font-weight: 600; color: #4098d7;"><i class="fas fa-user"></i> {{ name }}</span>
-                        <span style="font-weight: 600; color: #4098d7;"><i class="fas fa-birthday-cake"></i> {{ age }}</span>
-                        <span style="font-weight: 600; color: #4098d7;"><i class="fas fa-map-marker-alt"></i> {{ location }}</span>
-                    </div>
-                    <span style="font-weight: 500; color: #555;"><i class="fas fa-stethoscope"></i> Symptoms: <span style="color: #222;">{{ symptoms }}</span></span>
-                </div>
-                <div style="margin-bottom: 10px;">
-                    <span style="font-size: 1.1em; font-weight: bold; color: #FF2052;"><i class="fas fa-diagnoses"></i> Predicted Disease: {{ pred.predicted_disease }}</span>
-                </div>
-                <div class="button-grid" style="grid-template-columns: repeat(1, 1fr); margin-top: 18px;">
-                    <div class="accordion-item">
-                        <button class="custom-button accordion-button" style="background: #e3f2fd; color: #4098d7;">
-                            <span><i class="fas fa-disease"></i> Disease</span>
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="accordion-content" style="border: none;">
-                            <p style="margin: 0;">Predicted Disease: {{ pred.predicted_disease }}</p>
-                        </div>
-                    </div>
-                    <div class="accordion-item">
-                        <button class="custom-button accordion-button" style="background: #e3f2fd; color: #4098d7;">
-                            <span><i class="fas fa-info-circle"></i> Description</span>
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="accordion-content" style="border: none;">
-                            <p style="margin: 0;">{{ pred.dis_des }}</p>
-                        </div>
-                    </div>
-                    <div class="accordion-item">
-                        <button class="custom-button accordion-button" style="background: #e3f2fd; color: #4098d7;">
-                            <span><i class="fas fa-shield-alt"></i> Precaution</span>
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="accordion-content" style="border: none;">
-                            <ul style="margin: 0; padding-left: 18px;">
-                                {% for i in pred.my_precautions %}
-                                <li>{{ i }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="accordion-item">
-                        <button class="custom-button accordion-button" style="background: #e3f2fd; color: #4098d7;">
-                            <span><i class="fas fa-pills"></i> Medications</span>
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="accordion-content" style="border: none;">
-                            <ul style="margin: 0; padding-left: 18px;">
-                                {% for i in pred.medications %}
-                                <li>{{ i }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="accordion-item">
-                        <button class="custom-button accordion-button" style="background: #e3f2fd; color: #4098d7;">
-                            <span><i class="fas fa-dumbbell"></i> Workouts</span>
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="accordion-content" style="border: none;">
-                            <ul style="margin: 0; padding-left: 18px;">
-                                {% for i in pred.workout %}
-                                <li>{{ i }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="accordion-item">
-                        <button class="custom-button accordion-button" style="background: #e3f2fd; color: #4098d7;">
-                            <span><i class="fas fa-apple-alt"></i> Diets</span>
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="accordion-content" style="border: none;">
-                            <ul style="margin: 0; padding-left: 18px;">
-                                {% for i in pred.my_diet %}
-                                <li>{{ i }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
             {% endfor %}
-        {% endif %}
-        {% if predictions %}
-        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 18px;">
-            <form action="/download_pdf" method="get" style="display: inline;">
-                <textarea name="text" style="display:none;">
-Name: {{ name }}
-Age: {{ age }}
-Location: {{ location }}
-Symptoms: {{ symptoms }}
-{% for pred in predictions %}
-Predicted Disease: {{ pred.predicted_disease }}
-Description: {{ pred.dis_des }}
-Precautions: 
-{% for i in pred.my_precautions %}
-- {{ i }}
-{% endfor %}
-Medications: 
-{% for i in pred.medications %}
-- {{ i }}
-{% endfor %}
-Workouts: 
-{% for i in pred.workout %}
-- {{ i }}
-{% endfor %}
-Diets: 
-{% for i in pred.my_diet %}
-- {{ i }}
-{% endfor %}
----
-{% endfor %}
-                </textarea>
-                <button type="submit" class="custom-button" style="background-color: #28a745; width: auto;">Health Report Download</button>
-            </form>
-            <form action="/doctor_consultation" method="get" style="display: inline;">
-                <input type="hidden" name="name" value="{{ name }}">
-                <input type="hidden" name="age" value="{{ age }}">
-                <input type="hidden" name="email" value="{{ email }}">
-                <input type="hidden" name="symptoms" value="{{ symptoms }}">
-                <button type="submit" class="custom-button" style="background-color: #17a2b8; width: auto;">Doctor Consultation</button>
-            </form>
+        {% else %}
+        <div class="no-results">
+            <div class="empty-state">
+                <div class="empty-state-icon"><i class="fas fa-stethoscope"></i></div>
+                <div class="empty-state-title">No analysis yet</div>
+                <div class="empty-state-desc">Fill in your details and symptoms on the left, then click "Analyze Symptoms" to receive AI-powered health insights.</div>
+            </div>
         </div>
         {% endif %}
     </div>
 </div>
-<br>
+{% endblock %}
 
-<!-- Modal Popup -->
-<div id="messageModal" class="modal">
-    <div class="modal-content">
-        <span class="close-button">&times;</span>
-        <p id="modalMessage" style="white-space: pre-line;"></p>
-    </div>
-</div>
-
+{% block page_scripts %}
 <script>
-    const startSpeechRecognitionButton = document.getElementById('startSpeechRecognition');
-    const symptomsInput = document.getElementById('symptoms');
-
-    startSpeechRecognitionButton.addEventListener('click', startSpeechRecognition);
-
-    function startSpeechRecognition() {
-        const recognition = new webkitSpeechRecognition(); // Use webkitSpeechRecognition for compatibility
-
-        recognition.lang = 'en-US'; // Set the language for recognition
-
-        recognition.onresult = function (event) {
-            const result = event.results[0][0].transcript;
-            symptomsInput.value = result; // Place the result in the symptoms input box
-        };
-
-        recognition.onend = function () {
-            console.log('Speech recognition ended.');
-        };
-
-        recognition.start();
+function addSymptom(sym) {
+    const input = document.getElementById('symptoms');
+    const current = input.value.trim();
+    if (current) {
+        const parts = current.split(',').map(s => s.trim());
+        if (!parts.includes(sym)) input.value = parts.join(', ') + ', ' + sym;
+    } else {
+        input.value = sym;
     }
+    input.focus();
+}
 
-    // Accordion functionality
-    const accordionButtons = document.querySelectorAll('.accordion-button');
+// Voice recognition
+const micBtn = document.getElementById('micBtn');
+const micIcon = document.getElementById('micIcon');
+let isRecording = false;
 
-    accordionButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const content = button.nextElementSibling;
-            const icon = button.querySelector('i');
-
-            // Close all other accordions
-            document.querySelectorAll('.accordion-content').forEach(acc => {
-                if (acc !== content) {
-                    acc.style.maxHeight = null;
-                    acc.classList.remove('open');
-                    acc.previousElementSibling.querySelector('i').classList.remove('fa-chevron-up');
-                    acc.previousElementSibling.querySelector('i').classList.add('fa-chevron-down');
-                }
-            });
-
-            // Toggle content visibility with smooth animation
-            if (content.style.maxHeight) {
-                content.style.maxHeight = null;
-                content.classList.remove('open');
-                icon.classList.remove('fa-chevron-up');
-                icon.classList.add('fa-chevron-down');
-            } else {
-                content.style.maxHeight = content.scrollHeight + "px";
-                content.classList.add('open');
-                icon.classList.remove('fa-chevron-down');
-                icon.classList.add('fa-chevron-up');
-            }
+if (micBtn) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SR) {
+        const recognition = new SR();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.onresult = e => {
+            const txt = e.results[0][0].transcript;
+            const input = document.getElementById('symptoms');
+            input.value = input.value ? input.value + ', ' + txt : txt;
+            micIcon.className = 'fas fa-microphone';
+            isRecording = false;
+        };
+        recognition.onend = () => { micIcon.className = 'fas fa-microphone'; isRecording = false; };
+        micBtn.addEventListener('click', () => {
+            if (!isRecording) { recognition.start(); micIcon.className = 'fas fa-microphone-slash'; isRecording = true; }
+            else { recognition.stop(); micIcon.className = 'fas fa-microphone'; isRecording = false; }
         });
-    });
-</script>
+    }
+}
 
-<style>
-    .main-container {
-        display: flex;
-        gap: 40px;
-        justify-content: center;
-        align-items: flex-start;
-        margin-top: 20px;
-        flex-wrap: wrap;
-    }
-    .form-container, .results-container {
-        border-radius: 18px;
-        box-shadow: 0 6px 24px rgba(64,152,215,0.08);
-        background: #f8fbff;
-        padding: 32px 28px;
-        min-width: 320px;
-        max-width: 600px;
-        width: 100%;
-    }
-    .custom-card {
-        border-radius: 16px;
-        box-shadow: 0 4px 16px rgba(64,152,215,0.10);
-        background: #fff;
-        margin-bottom: 32px;
-        padding: 24px 20px;
-        transition: box-shadow 0.3s, transform 0.3s;
-    }
-    .custom-card:hover {
-        box-shadow: 0 8px 32px rgba(64,152,215,0.18);
-        transform: translateY(-4px) scale(1.01);
-    }
-    .accordion-item {
-        margin-bottom: 14px;
-        border-radius: 10px;
-        overflow: hidden;
-        box-shadow: 0 2px 8px rgba(64,152,215,0.06);
-        background: #f4faff;
-        transition: box-shadow 0.3s;
-    }
-    .accordion-item:last-child {
-        margin-bottom: 0;
-    }
-    .accordion-button {
-        background: #e3f2fd !important;
-        color: #4098d7 !important;
-        font-weight: 600;
-        border-radius: 10px !important;
-        box-shadow: none !important;
-        border: none !important;
-        margin-bottom: 0 !important;
-        padding: 14px 22px !important;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-        transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-        font-size: 1.08em;
-        letter-spacing: 0.01em;
-        cursor: pointer;
-        outline: none;
-        border-bottom: 1px solid #d0e7fa;
-        position: relative;
-        z-index: 2;
-    }
-    .accordion-button:hover, .accordion-button:focus {
-        background: #d0e7fa !important;
-        color: #3078b1 !important;
-        box-shadow: 0 2px 8px rgba(64,152,215,0.10);
-    }
-    .accordion-button i {
-        transition: transform 0.3s, color 0.3s;
-        margin-left: 12px;
-        font-size: 1.2em;
-        color: #4098d7;
-    }
-    .accordion-content {
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s;
-        padding: 0 22px;
-        background: #f9fbfd;
-        border-radius: 0 0 10px 10px;
-        margin-top: 0;
-        border: none;
-        font-size: 15.5px;
-        color: #333;
-        box-shadow: none;
-        position: relative;
-        z-index: 1;
-    }
-    .accordion-content.open {
-        border-top: 1px solid #e3eaf5;
-        box-shadow: 0 2px 8px rgba(64,152,215,0.08);
-        background: #f4faff;
-        padding-top: 12px;
-        padding-bottom: 16px;
-    }
-    .accordion-content ul {
-        padding-left: 18px;
-        margin: 0;
-    }
-    .button-grid {
-        gap: 14px;
-        margin-top: 14px;
-    }
-    @media (max-width: 900px) {
-        .main-container {
-            flex-direction: column;
-            gap: 30px;
-        }
-        .form-container, .results-container {
-            max-width: 100%;
-        }
-    }
-    @media (max-width: 600px) {
-        .form-container, .results-container {
-            padding: 18px 6px;
-            min-width: unset;
-        }
-        .custom-card {
-            padding: 14px 6px;
-        }
-    }
-</style>
+document.getElementById('consultForm').addEventListener('submit', function() {
+    const btn = document.getElementById('predictBtn');
+    btn.innerHTML = '<span class="animate-spin" style="display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.4); border-top-color:white; border-radius:50%; margin-right:6px;"></span> Analyzing...';
+    btn.disabled = true;
+});
+</script>
 {% endblock %}

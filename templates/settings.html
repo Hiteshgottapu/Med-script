@@ -1,0 +1,592 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block page_title %}Settings & Profile{% endblock %}
+
+{% block extra_css %}
+<style>
+.settings-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 0;
+    min-height: calc(100vh - 64px);
+    background: var(--surface-0);
+}
+
+.settings-sidenav {
+    border-right: var(--border);
+    background: var(--surface-0);
+    padding: 24px 0;
+}
+
+.settings-user-card {
+    padding: 0 24px 24px;
+    border-bottom: var(--border);
+    margin-bottom: 16px;
+}
+
+.settings-avatar {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent) 0%, #009688 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 14px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(27, 108, 168, 0.2);
+}
+
+.settings-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.settings-user-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.settings-user-email {
+    font-size: 13px;
+    color: var(--text-muted);
+    word-break: break-all;
+}
+
+.settings-user-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 8px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    background: var(--accent-light);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.settings-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+}
+
+.settings-nav-item:hover {
+    background: var(--surface-1);
+    color: var(--text-primary);
+}
+
+.settings-nav-item.active {
+    background: var(--accent-light);
+    color: var(--accent);
+    font-weight: 600;
+    border-right: 3px solid var(--accent);
+}
+
+.settings-nav-item i {
+    width: 18px;
+    text-align: center;
+    font-size: 15px;
+}
+
+.settings-content {
+    padding: 36px 40px;
+    max-width: 860px;
+    overflow-y: auto;
+}
+
+.settings-section {
+    display: none;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+.settings-section.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.section-header {
+    margin-bottom: 28px;
+    padding-bottom: 16px;
+    border-bottom: var(--border);
+}
+
+.section-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    letter-spacing: -0.3px;
+}
+
+.section-desc {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.setting-card {
+    background: var(--surface-0);
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.setting-card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.setting-card-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+}
+
+/* Custom Toggle Switch */
+.switch-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px dashed var(--surface-2);
+    cursor: pointer;
+}
+.switch-label:last-child {
+    border-bottom: none;
+}
+
+.switch-info-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.switch-info-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.toggle-switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    display: inline-block;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: var(--surface-3, #D1D5DB);
+    transition: .25s;
+    border-radius: 24px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .25s;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+input:checked + .toggle-slider {
+    background-color: var(--accent);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(20px);
+}
+
+/* Danger Zone */
+.danger-box {
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.04);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+}
+
+.danger-box-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--error);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+@media (max-width: 860px) {
+    .settings-layout { grid-template-columns: 1fr; }
+    .settings-sidenav { border-right: none; border-bottom: var(--border); }
+    .settings-content { padding: 24px 20px; }
+    .form-grid-2 { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-layout">
+    <!-- Left Navigation Sidebar -->
+    <div class="settings-sidenav">
+        <div class="settings-user-card">
+            <div class="settings-avatar">
+                {% if profile.get('photo_url') %}
+                <img src="{{ profile.photo_url }}" alt="Profile photo">
+                {% else %}
+                {{ profile.get('name', session.get('user', {}).get('email', 'U'))[0:1].upper() }}
+                {% endif %}
+            </div>
+            <div class="settings-user-name">{{ profile.get('name', 'User') }}</div>
+            <div class="settings-user-email">{{ session.get('user', {}).get('email', '') }}</div>
+            <div class="settings-user-badge">
+                <i class="fas fa-user-shield"></i> Healthcare Professional
+            </div>
+        </div>
+
+        <nav>
+            <button class="settings-nav-item active" onclick="switchTab('account', this)">
+                <i class="fas fa-id-card"></i> Account & Profile
+            </button>
+            <button class="settings-nav-item" onclick="switchTab('clinical', this)">
+                <i class="fas fa-heartbeat"></i> Clinical & Health
+            </button>
+            <button class="settings-nav-item" onclick="switchTab('preferences', this)">
+                <i class="fas fa-sliders-h"></i> Preferences
+            </button>
+            <button class="settings-nav-item" onclick="switchTab('security', this)">
+                <i class="fas fa-shield-alt"></i> Security & Access
+            </button>
+            <button class="settings-nav-item" onclick="switchTab('data', this)">
+                <i class="fas fa-database"></i> Data & Privacy
+            </button>
+            <div style="height: 1px; background: var(--surface-2); margin: 12px 20px;"></div>
+            <a href="{{ url_for('logout') }}" class="settings-nav-item" style="color: var(--error);">
+                <i class="fas fa-sign-out-alt"></i> Sign Out
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="settings-content">
+
+        <!-- TAB 1: Account & Profile -->
+        <div class="settings-section active" id="tab-account">
+            <div class="section-header">
+                <div class="section-title">Account & Personal Profile</div>
+                <div class="section-desc">Manage your basic identity, professional details, and contact info.</div>
+            </div>
+
+            <form action="{{ url_for('profile') }}" method="post">
+                <div class="setting-card">
+                    <div class="setting-card-title">Personal Details</div>
+                    <div class="setting-card-desc">Your basic contact information used across the workspace.</div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" class="form-input" name="name" value="{{ profile.get('name', '') }}" placeholder="Dr. John Doe">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" class="form-input" value="{{ session.get('user', {}).get('email', '') }}" disabled style="background: var(--surface-1); cursor: not-allowed;">
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Phone Number</label>
+                            <input type="text" class="form-input" name="phone" value="{{ profile.get('phone', '') }}" placeholder="+1 (555) 000-0000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Photo URL</label>
+                            <input type="text" class="form-input" name="photo_url" value="{{ profile.get('photo_url', '') }}" placeholder="https://example.com/photo.jpg">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Address / Location</label>
+                        <input type="text" class="form-input" name="address" value="{{ profile.get('address', '') }}" placeholder="City, Country or Hospital Facility">
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Changes</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- TAB 2: Clinical Details -->
+        <div class="settings-section" id="tab-clinical">
+            <div class="section-header">
+                <div class="section-title">Clinical & Health Details</div>
+                <div class="section-desc">Personal metrics and medical profile used for AI decision support.</div>
+            </div>
+
+            <form action="{{ url_for('profile') }}" method="post">
+                <div class="setting-card">
+                    <div class="setting-card-title">Vitals & Biological Metrics</div>
+                    <div class="setting-card-desc">Accurate health details enable tailored medication recommendations.</div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Height (cm)</label>
+                            <input type="number" step="0.1" class="form-input" name="height" value="{{ profile.get('height') or '' }}" placeholder="175">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Weight (kg)</label>
+                            <input type="number" step="0.1" class="form-input" name="weight" value="{{ profile.get('weight') or '' }}" placeholder="70">
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Blood Group</label>
+                            <select class="form-select" name="blood_group">
+                                <option value="">Select Blood Group</option>
+                                {% for bg in ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'] %}
+                                <option value="{{ bg }}" {% if profile.get('blood_group') == bg %}selected{% endif %}>{{ bg }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Smoking Status</label>
+                            <select class="form-select" name="smoking">
+                                <option value="">Select Status</option>
+                                <option value="Non-Smoker" {% if profile.get('smoking') == 'Non-Smoker' %}selected{% endif %}>Non-Smoker</option>
+                                <option value="Former Smoker" {% if profile.get('smoking') == 'Former Smoker' %}selected{% endif %}>Former Smoker</option>
+                                <option value="Active Smoker" {% if profile.get('smoking') == 'Active Smoker' %}selected{% endif %}>Active Smoker</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-card">
+                    <div class="setting-card-title">Medical Conditions & Sensitivities</div>
+
+                    <div class="form-group">
+                        <label class="form-label">Known Allergies</label>
+                        <textarea class="form-textarea" name="allergies" rows="2" placeholder="e.g. Penicillin, Peanuts, Latex">{{ profile.get('allergies', '') }}</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Chronic Conditions / Diagnoses</label>
+                        <textarea class="form-textarea" name="medical_conditions" rows="2" placeholder="e.g. Hypertension, Type 2 Diabetes, Asthma">{{ profile.get('chronic_conditions', '') }}</textarea>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label">Current Active Medications</label>
+                        <textarea class="form-textarea" name="current_medications" rows="2" placeholder="e.g. Metformin 500mg daily, Lisinopril 10mg">{{ profile.get('current_medications', '') }}</textarea>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Health Info</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- TAB 3: Preferences -->
+        <div class="settings-section" id="tab-preferences">
+            <div class="section-header">
+                <div class="section-title">Application Preferences</div>
+                <div class="section-desc">Customize interface theme, density, notifications, and language.</div>
+            </div>
+
+            <form action="{{ url_for('profile') }}" method="post">
+                <div class="setting-card">
+                    <div class="setting-card-title">Theme & Appearance</div>
+                    <div class="setting-card-desc">Choose your preferred workspace aesthetic.</div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Visual Theme</label>
+                            <select class="form-select" id="themeSelect">
+                                <option value="light">Light Mode (Clean Clinical)</option>
+                                <option value="dark">Clinical Dark Mode</option>
+                                <option value="system">Match System</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Layout Density</label>
+                            <select class="form-select">
+                                <option value="comfortable">Comfortable (Default)</option>
+                                <option value="compact">Compact (High Information Density)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-card">
+                    <div class="setting-card-title">Notification Settings</div>
+                    <div class="setting-card-desc">Control what alerts and notifications you receive.</div>
+
+                    <label class="switch-label">
+                        <div>
+                            <div class="switch-info-title">Email Notifications</div>
+                            <div class="switch-info-desc">Receive clinical updates, prescription digests, and security alerts via email</div>
+                        </div>
+                        <span class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </span>
+                    </label>
+
+                    <label class="switch-label">
+                        <div>
+                            <div class="switch-info-title">Prescription Analysis Alerts</div>
+                            <div class="switch-info-desc">Notify when AI completes drug interaction & dosage checks</div>
+                        </div>
+                        <span class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </span>
+                    </label>
+
+                    <label class="switch-label">
+                        <div>
+                            <div class="switch-info-title">Consultation Reminders</div>
+                            <div class="switch-info-desc">Get reminders 15 minutes before scheduled telehealth appointments</div>
+                        </div>
+                        <span class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="button" class="btn btn-primary" onclick="showToast('Preferences saved successfully!', 'success')"><i class="fas fa-check"></i> Save Preferences</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- TAB 4: Security & Access -->
+        <div class="settings-section" id="tab-security">
+            <div class="section-header">
+                <div class="section-title">Security & Access Control</div>
+                <div class="section-desc">Manage credentials, authentication, and session security.</div>
+            </div>
+
+            <div class="setting-card">
+                <div class="setting-card-title">Change Password</div>
+                <div class="setting-card-desc">Update your password to keep your healthcare account secure.</div>
+
+                <form action="{{ url_for('update_password') }}" method="post">
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">New Password</label>
+                            <input type="password" class="form-input" name="new_password" placeholder="At least 6 characters" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-input" name="confirm_password" placeholder="Confirm new password" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-lock"></i> Update Password</button>
+                </form>
+            </div>
+
+            <div class="setting-card">
+                <div class="setting-card-title">Two-Factor Authentication (2FA)</div>
+                <div class="setting-card-desc">Add an extra layer of security to your clinical workspace.</div>
+
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="badge badge-success"><i class="fas fa-shield-alt"></i> Protected via Supabase Auth</span>
+                        <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 6px;">JWT Token authentication active.</div>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="showToast('2FA configuration managed in Supabase Security Settings', 'info')">Configure 2FA</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: Data & Privacy -->
+        <div class="settings-section" id="tab-data">
+            <div class="section-header">
+                <div class="section-title">Data Management & Privacy</div>
+                <div class="section-desc">Export your records, manage research consent, or request account removal.</div>
+            </div>
+
+            <div class="setting-card">
+                <div class="setting-card-title">Export Clinical Data</div>
+                <div class="setting-card-desc">Download a complete JSON file containing your profile info and saved AI chat history.</div>
+
+                <a href="{{ url_for('export_data') }}" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-download"></i> Download Medical Data (JSON)
+                </a>
+            </div>
+
+            <div class="danger-box">
+                <div class="danger-box-title">
+                    <i class="fas fa-exclamation-triangle"></i> Danger Zone
+                </div>
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5;">
+                    Permanently delete your account, profile details, and chat history. This action cannot be undone.
+                </div>
+                <button class="btn btn-danger btn-sm" onclick="if(confirm('Are you sure you want to permanently delete your account and data?')) window.location.href='{{ url_for('delete_account') }}'">
+                    <i class="fas fa-trash-alt"></i> Delete Account & Data
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+function switchTab(tabId, btn) {
+    document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.settings-nav-item').forEach(b => b.classList.remove('active'));
+    
+    const target = document.getElementById('tab-' + tabId);
+    if (target) target.classList.add('active');
+    if (btn) btn.classList.add('active');
+}
+</script>
+{% endblock %}

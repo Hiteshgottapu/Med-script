@@ -1,0 +1,460 @@
+{% extends "base.html" %}
+{% block title %}Order Confirmation #{{ order.order_id }} — MedScript{% endblock %}
+{% block page_title %}Order Confirmation{% endblock %}
+
+{% block extra_css %}
+<style>
+.confirmation-container {
+  max-width: 860px;
+  margin: 32px auto 60px;
+  padding: 0 20px;
+}
+
+.confirmation-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.confirmation-header {
+  background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
+  color: #ffffff;
+  padding: 36px 32px;
+  text-align: center;
+  position: relative;
+}
+
+.confirmation-icon {
+  width: 64px;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  margin: 0 auto 16px;
+  color: #ffffff;
+}
+
+.confirmation-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+
+.confirmation-subtitle {
+  font-size: 14px;
+  color: #ccfbf1;
+  max-width: 500px;
+  margin: 0 auto 16px;
+}
+
+.order-badge-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-family: monospace;
+  font-weight: 600;
+}
+
+/* Tracking Bar */
+.order-tracking-bar {
+  padding: 24px 32px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.tracking-steps {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.tracking-steps::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: 30px;
+  right: 30px;
+  height: 3px;
+  background: #cbd5e1;
+  z-index: 1;
+}
+
+.tracking-step {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.step-node {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.tracking-step.completed .step-node {
+  background: #0d9488;
+  border-color: #0d9488;
+  color: #ffffff;
+}
+
+.tracking-step.active .step-node {
+  background: #ffffff;
+  border-color: #0d9488;
+  color: #0d9488;
+  box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.2);
+}
+
+.step-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.tracking-step.completed .step-label,
+.tracking-step.active .step-label {
+  color: #0f172a;
+}
+
+/* Order Details Grid */
+.order-body {
+  padding: 32px;
+}
+
+.order-info-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.info-block {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+.info-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.info-content {
+  font-size: 14px;
+  color: #1e293b;
+  line-height: 1.5;
+}
+
+/* Item Table */
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 24px;
+}
+
+.items-table th {
+  background: #f1f5f9;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.items-table td {
+  padding: 14px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.item-main-name {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.item-subtext {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.source-badge-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  background: #eff6ff;
+  color: #2563eb;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* Cost Summary */
+.cost-summary-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+  margin-bottom: 28px;
+}
+
+.cost-summary-card {
+  width: 320px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+.cost-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.cost-row.total-row {
+  border-top: 1px solid #cbd5e1;
+  padding-top: 10px;
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.free-tag {
+  color: #059669;
+  font-weight: 600;
+}
+
+/* Disclaimer & Buttons */
+.order-disclaimer {
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  color: #92400e;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 12px;
+  line-height: 1.5;
+  margin-bottom: 24px;
+  display: flex;
+  gap: 10px;
+}
+
+.order-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .order-info-columns { grid-template-columns: 1fr; }
+  .order-body { padding: 20px 16px; }
+  .confirmation-header { padding: 28px 16px; }
+  .cost-summary-card { width: 100%; }
+}
+
+@media print {
+  .sidebar, .top-nav, .order-actions, .order-disclaimer { display: none !important; }
+  .confirmation-container { margin: 0; padding: 0; max-width: 100%; }
+  .confirmation-card { border: none; box-shadow: none; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="confirmation-container">
+  <div class="confirmation-card">
+    <!-- Header -->
+    <div class="confirmation-header">
+      <div class="confirmation-icon">
+        <i class="fas fa-check"></i>
+      </div>
+      <div class="confirmation-title">Prescription Order Confirmed!</div>
+      <div class="confirmation-subtitle">
+        Your medicine order has been received and routed to our verified pharmaceutical dispensing network.
+      </div>
+      <div class="order-badge-container">
+        <span>Order Reference:</span>
+        <strong style="color: #ffffff;">{{ order.order_id }}</strong>
+      </div>
+    </div>
+
+    <!-- Status Tracker -->
+    <div class="order-tracking-bar">
+      <div class="tracking-steps">
+        <div class="tracking-step completed">
+          <div class="step-node"><i class="fas fa-check"></i></div>
+          <div class="step-label">Placed</div>
+        </div>
+        <div class="tracking-step active">
+          <div class="step-node">2</div>
+          <div class="step-label">Dispensing</div>
+        </div>
+        <div class="tracking-step">
+          <div class="step-node">3</div>
+          <div class="step-label">Dispatched</div>
+        </div>
+        <div class="tracking-step">
+          <div class="step-node">4</div>
+          <div class="step-label">Delivered</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="order-body">
+      <div class="order-info-columns">
+        <!-- Shipping Details -->
+        <div class="info-block">
+          <div class="info-title">
+            <i class="fas fa-map-marker-alt" style="color: #0d9488;"></i>
+            <span>Delivery Destination</span>
+          </div>
+          <div class="info-content">
+            <strong>{{ order.shipping_address.full_name }}</strong><br>
+            {{ order.shipping_address.street_address }}<br>
+            {{ order.shipping_address.city }}, {{ order.shipping_address.state }} - {{ order.shipping_address.pincode }}<br>
+            <span style="color: #64748b; font-size: 13px;">Phone: {{ order.shipping_address.phone }}</span>
+          </div>
+        </div>
+
+        <!-- Payment & Delivery Details -->
+        <div class="info-block">
+          <div class="info-title">
+            <i class="fas fa-receipt" style="color: #0d9488;"></i>
+            <span>Payment & Schedule</span>
+          </div>
+          <div class="info-content">
+            <div><strong>Payment Method:</strong> {{ order.payment_method }}</div>
+            <div><strong>Payment Status:</strong> <span class="badge badge-success" style="font-size: 11px;">{{ order.payment_status }}</span></div>
+            <div><strong>Ordered At:</strong> {{ order.created_at }}</div>
+            <div><strong>Estimated Delivery:</strong> <span style="color: #0d9488; font-weight: 600;">{{ order.estimated_delivery }}</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Itemized Table -->
+      <h3 style="font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">Prescription Items</h3>
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>Medicine & Specification</th>
+            <th>Source</th>
+            <th style="text-align: center;">Qty</th>
+            <th style="text-align: right;">Unit Price</th>
+            <th style="text-align: right;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in order.items %}
+          <tr>
+            <td>
+              <div class="item-main-name">{{ item.name }}</div>
+              <div class="item-subtext">
+                {% if item.dosage_form %}{{ item.dosage_form }} • {% endif %}
+                {% if item.strength %}{{ item.strength }} • {% endif %}
+                {% if item.manufacturer %}{{ item.manufacturer }}{% endif %}
+              </div>
+            </td>
+            <td>
+              <span class="source-badge-cell">
+                <i class="fas fa-store"></i> {{ item.source }}
+              </span>
+            </td>
+            <td style="text-align: center; font-weight: 600;">{{ item.quantity }}</td>
+            <td style="text-align: right;">₹{{ "%.2f"|format(item.price) }}</td>
+            <td style="text-align: right; font-weight: 700; color: #0f172a;">
+              ₹{{ "%.2f"|format(item.price * item.quantity) }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <!-- Price Breakdown -->
+      <div class="cost-summary-wrapper">
+        <div class="cost-summary-card">
+          <div class="cost-row">
+            <span>Items Subtotal</span>
+            <span>₹{{ "%.2f"|format(order.subtotal) }}</span>
+          </div>
+          <div class="cost-row">
+            <span>Standard Shipping</span>
+            {% if order.delivery_fee == 0 %}
+            <span class="free-tag">FREE</span>
+            {% else %}
+            <span>₹{{ "%.2f"|format(order.delivery_fee) }}</span>
+            {% endif %}
+          </div>
+          <div class="cost-row">
+            <span>GST / Taxes (5%)</span>
+            <span>₹{{ "%.2f"|format(order.tax_amount) }}</span>
+          </div>
+          <div class="cost-row total-row">
+            <span>Grand Total</span>
+            <span style="color: #0d9488;">₹{{ "%.2f"|format(order.total_amount) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clinical Safety Disclaimer -->
+      <div class="order-disclaimer">
+        <i class="fas fa-info-circle" style="font-size: 16px; margin-top: 2px;"></i>
+        <div>
+          <strong>Important Clinical Reminder:</strong> Medicines are dispensed by licensed partner pharmacies according to Schedule H / H1 compliance. Keep out of reach of children and follow dosage instructions provided on your prescription by your physician.
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="order-actions">
+        <button onclick="window.print()" class="btn btn-secondary">
+          <i class="fas fa-print"></i> Print Invoice
+        </button>
+        <a href="/medicine" class="btn btn-primary">
+          <i class="fas fa-search"></i> Search More Medicines
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

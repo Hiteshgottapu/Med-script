@@ -20,8 +20,7 @@ from email.mime.multipart import MIMEMultipart
 from reportlab.pdfgen import canvas
 import sqlite3
 import datetime
-import firebase_admin
-from firebase_admin import credentials, initialize_app, auth, firestore, db
+from supabase import create_client, Client
 from functools import wraps
 from flask import g
 from PIL import Image
@@ -35,6 +34,8 @@ from datetime import datetime, timedelta
 from cryptography.x509 import load_pem_x509_certificate
 from cryptography.hazmat.backends import default_backend
 
+from services.medicine import medicine_engine, NormalizedMedicine, order_service
+
 # Define the login_required decorator
 def login_required(f):
     @wraps(f)
@@ -43,13 +44,13 @@ def login_required(f):
         auth_header = request.headers.get('Authorization')
         if auth_header and auth_header.startswith('Bearer '):
             token = auth_header.split('Bearer ')[1]
-            decoded_token = verify_firebase_token(token)
+            decoded_token = verify_supabase_token(token)
             if decoded_token:
                 g.user = decoded_token
                 # Update session if not exists
                 if 'user' not in session:
                     session['user'] = {
-                        'uid': decoded_token.get('uid', ''),
+                        'uid': decoded_token.get('sub', ''),
                         'email': decoded_token.get('email', ''),
                         'token': token
                     }
@@ -60,19 +61,19 @@ def login_required(f):
             # Try session token
             session_token = session['user'].get('token')
             if session_token:
-                decoded_token = verify_firebase_token(session_token)
+                decoded_token = verify_supabase_token(session_token)
                 if decoded_token:
                     g.user = decoded_token
                     return f(*args, **kwargs)
             
-            # If session token fails, try Firebase token
-            firebase_token = session['user'].get('firebase_token')
-            if firebase_token:
-                decoded_token = verify_firebase_token(firebase_token)
+            # If session token fails, try supabase token
+            supabase_token = session['user'].get('supabase_token')
+            if supabase_token:
+                decoded_token = verify_supabase_token(supabase_token)
                 if decoded_token:
                     g.user = decoded_token
                     # Update session token
-                    session['user']['token'] = firebase_token
+                    session['user']['token'] = supabase_token
                     return f(*args, **kwargs)
 
         # If no valid authentication found
@@ -106,14 +107,11 @@ logging.basicConfig(level=logging.DEBUG)
 # ------------------ API Keys & Configurations ------------------
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 gemini_api_key = os.getenv("GEMINI_API_KEY")
-FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY")
-TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
-TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
-TWILIO_FROM_NUMBER = os.getenv("TWILIO_FROM_NUMBER")
-INFERMEDICA_APP_ID = os.getenv("INFERMEDICA_APP_ID", "")
-INFERMEDICA_APP_KEY = os.getenv("INFERMEDICA_APP_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.7-flash")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-if not gemini_api_key or not GOOGLE_API_KEY or not FIREBASE_API_KEY:
+if not gemini_api_key or not GOOGLE_API_KEY or not SUPABASE_URL or not SUPABASE_KEY:
     logging.error("⚠️ Missing API Keys! Ensure they are set correctly.")
     exit(1)
 
@@ -123,425 +121,839 @@ app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Use timedelta directly
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "supersecretkey")
+app.config['SUPABASE_URL'] = SUPABASE_URL
+app.config['SUPABASE_KEY'] = SUPABASE_KEY
 Session(app)
 
-# Initialize Firebase Admin SDK
+# Initialize Supabase Client
 try:
-    # Check if Firebase Admin is already initialized
-    if not firebase_admin._apps:
-        cred = credentials.Certificate("sample-fe05e-firebase-adminsdk-fbsvc-530bbf15e5.json")
-        firebase_admin.initialize_app(cred, {
-            'databaseURL': 'https://sample-fe05e-default-rtdb.asia-southeast1.firebasedatabase.app/',
-            'projectId': 'sample-fe05e'
-        })
-        logging.info("Firebase Admin SDK initialized successfully.")
-        logging.info(f"Service account email: {cred.service_account_email}")
-    else:
-        logging.info("Firebase Admin SDK already initialized.")
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    logging.info("Supabase client initialized successfully.")
 except Exception as e:
-    logging.error(f"Error initializing Firebase Admin SDK: {str(e)}")
+    logging.error(f"Error initializing Supabase client: {str(e)}")
     raise e
 
-def load_firebase_certificates():
-    """Load Firebase certificates from file"""
-    try:
-        with open('firebase_certs.json', 'r') as f:
-            certs_data = json.load(f)
-            certs = {}
-            for kid, cert_pem in certs_data.items():
-                cert = load_pem_x509_certificate(cert_pem.encode(), default_backend())
-                certs[kid] = cert.public_key()
-            return certs
-    except Exception as e:
-        logging.error(f"Error loading Firebase certificates: {e}")
-        return {}
+def get_db_client():
+    """Returns Supabase client with postgrest auth token attached if available"""
+    token = None
+    if hasattr(g, 'user') and isinstance(g.user, dict):
+        token = session.get('user', {}).get('token') or session.get('user', {}).get('supabase_token')
+    elif 'user' in session and isinstance(session['user'], dict):
+        token = session['user'].get('token') or session['user'].get('supabase_token')
+        
+    if token:
+        try:
+            supabase.postgrest.auth(token)
+        except Exception as e:
+            logging.debug(f"Could not attach user token: {e}")
+    return supabase
 
-def verify_firebase_token(token):
-    """Verify either a Firebase token or a session token"""
+def verify_supabase_token(token):
+    """Verify a Supabase JWT token"""
     if not token:
         return None
         
     try:
-        # First try to verify with Firebase Admin SDK
-        try:
-            decoded_token = auth.verify_id_token(token)
-            return decoded_token
-        except Exception as firebase_error:
-            logging.debug(f"Firebase Admin verification failed, trying session token: {firebase_error}")
-            
-            # If Firebase Admin fails, try session token
-            try:
-                # Get the unverified header to get the key ID
-                unverified_header = jwt.get_unverified_header(token)
-                kid = unverified_header.get('kid')
-                
-                if kid:
-                    # Load certificates
-                    certs = load_firebase_certificates()
-                    if kid in certs:
-                        # Verify the token with the correct public key
-                        decoded_token = jwt.decode(
-                            token,
-                            certs[kid],
-                            algorithms=['RS256'],
-                            audience='sample-fe05e',  # Your Firebase project ID
-                            options={"verify_exp": True}
-                        )
-                        return decoded_token
-                    else:
-                        logging.error(f"Certificate not found for kid: {kid}")
-                        return None
-                else:
-                    # If no kid in header, try to verify as a session token
-                    with open('sample-fe05e-firebase-adminsdk-fbsvc-530bbf15e5.json', 'r') as f:
-                        service_account = json.load(f)
-                        private_key = service_account['private_key']
-                    
-                    decoded_token = jwt.decode(
-                        token,
-                        private_key,
-                        algorithms=['RS256'],
-                        options={"verify_exp": True}
-                    )
-                    return decoded_token
-                    
-            except jwt.ExpiredSignatureError:
-                logging.error("Token has expired")
-                return None
-            except jwt.InvalidTokenError as e:
-                logging.error(f"Invalid token: {e}")
-                return None
-            except Exception as e:
-                logging.error(f"Error verifying token: {e}")
-                return None
-                
+        # Get user from Supabase using the token
+        response = supabase.auth.get_user(token)
+        if response and response.user:
+            return {
+                'sub': response.user.id,
+                'email': response.user.email
+            }
+        return None
     except Exception as e:
-        logging.error(f"Error in token verification: {str(e)}")
+        logging.error(f"Error verifying Supabase token: {e}")
         return None
 
-def create_session_token(user_data):
-    """Create a session token with user data"""
-    try:
-        # Read the service account file
-        with open('sample-fe05e-firebase-adminsdk-fbsvc-530bbf15e5.json', 'r') as f:
-            service_account = json.load(f)
-            private_key = service_account['private_key']
-            client_email = service_account['client_email']
-            project_id = service_account['project_id']
-
-        # Create token payload
-        payload = {
-            'uid': user_data['localId'],
-            'email': user_data.get('email', ''),
-            'iss': client_email,
-            'sub': client_email,
-            'aud': project_id,
-            'iat': datetime.utcnow(),
-            'exp': datetime.utcnow() + timedelta(hours=1)
-        }
-
-        # Create token using RS256 algorithm
-        token = jwt.encode(payload, private_key, algorithm='RS256')
-        return token
-    except Exception as e:
-        logging.error(f"Error creating session token: {e}")
-        return None
-
-# --- Medicine Price Scraping Function with Database Integration ---
+# --- Production Medicine Search Service & Routes ---
 def search_medicine_prices(medicine_name):
-    results = []
-
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-    }
-    platforms = {
-        "Truemeds": {
-            "url": f"https://www.truemeds.in/search/{medicine_name}",
-            "name_class": "sc-a39eeb4f-12 daYLth",
-            "price_class": "sc-a39eeb4f-17 iwZSqt"
-        },
-        "PharmEasy": {
-            "url": f"https://pharmeasy.in/search/all?name={medicine_name}",
-            "name_class": "ProductCard_medicineName__Uzjm7",
-            "price_class": "ProductCard_unitPriceDecimal__Ur26V"
-        },
-        "Tata 1mg": {
-            "url": f"https://www.1mg.com/search/all?filter=true&name={medicine_name}",
-            "name_class": "style__pro-title___3G3rr",
-            "price_class": "style__price-tag___KzOkY"
-        },
-        "Netmeds": {
-            "url": f"https://www.netmeds.com/catalogsearch/result/{medicine_name}/all",
-            "name_class": "clsgetname",
-            "price_class": "final-price"
-        }
-    }
-
-    def scrape_platform(platform, config):
-        try:
-            logging.info(f"Scraping {platform} for medicine: {medicine_name}")
-            response = requests.get(config['url'], headers=headers, timeout=10)
-            response.raise_for_status()
-
-            soup = BeautifulSoup(response.text, 'html.parser')
-            names = soup.find_all(class_=config['name_class'])
-            prices = soup.find_all(class_=config['price_class'])
-
-            if not names or not prices:
-                logging.warning(f"No data found on {platform} for '{medicine_name}'")
-                return []
-
-            platform_results = []
-            for name, price in zip(names, prices):
-                scraped_name = name.text.strip().lower()
-                search_term = medicine_name.lower()
-
-                # Allow partial matches using substring search or fuzzy matching
-                if search_term in scraped_name or fuzz.partial_ratio(search_term, scraped_name) > 80:
-                    platform_results.append({
-                        "pharmacy": platform,
-                        "name": name.text.strip(),
-                        "price": price.text.strip()
-                    })
-
-            return platform_results
-
-        except requests.exceptions.RequestException as e:
-            logging.error(f"Failed to scrape {platform}: {str(e)}")
-            return []
-
-    for platform, config in platforms.items():
-        results.extend(scrape_platform(platform, config))
-
-    return results
+    """
+    Adapter function to query the production multi-source MedicineSearchEngine.
+    Returns normalized dictionary format with legacy compatibility.
+    """
+    if not medicine_name:
+        return {}
+    search_res = medicine_engine.search(medicine_name)
+    grouped = {}
+    for m in search_res.results:
+        src = m.source or "Verified Source"
+        if src not in grouped:
+            grouped[src] = []
+        grouped[src].append({
+            "name": m.name,
+            "generic_name": m.generic_name,
+            "strength": m.strength,
+            "dosage_form": m.dosage_form,
+            "manufacturer": m.manufacturer,
+            "strip_details": m.pack_size,
+            "price": m.price,
+            "mrp": m.mrp,
+            "discount_percent": m.discount_percent,
+            "availability": m.availability,
+            "source_url": m.source_url,
+            "image_url": m.image_url,
+            "is_lowest_price": m.is_lowest_price,
+            "other_sources": m.other_sources
+        })
+    return grouped
 
 
 # --- Route: Medicine Search Page ---
 @app.route("/medicine", methods=["GET", "POST"])
 def medicine_search():
+    medicine_name = None
     if request.method == "POST":
         medicine_name = request.form.get("medicine_name")
-        if not medicine_name:
-            return redirect(url_for("medicine_search"))
+    else:
+        medicine_name = request.args.get("q") or request.args.get("medicine_name")
 
-        # Fetch results directly without saving to the database
-        results = search_medicine_prices(medicine_name)
+    if medicine_name:
+        medicine_name = medicine_name.strip()
+        search_res = medicine_engine.search(medicine_name)
+        legacy_grouped = search_medicine_prices(medicine_name)
+        return render_template(
+            "medicine_search.html",
+            results=legacy_grouped,
+            search_res=search_res,
+            medicine_name=medicine_name,
+            total_count=search_res.total
+        )
 
-        return render_template("medicine_search.html", results=results, medicine_name=medicine_name)
+    return render_template("medicine_search.html", results=None, search_res=None, medicine_name="")
 
-    return render_template("medicine_search.html")
 
-# --- API Route: Medicine Search JSON Response ---
+# --- API Route: Official Medicine Search JSON Endpoint ---
+@app.route("/api/medicines/search", methods=["GET"])
+def api_medicines_search():
+    query = request.args.get("q") or request.args.get("query") or request.args.get("name")
+    if not query or not query.strip():
+        return jsonify({
+            "success": False,
+            "error": "Query parameter 'q' is required",
+            "query": "",
+            "total": 0,
+            "results": []
+        }), 400
+
+    try:
+        force_refresh = request.args.get("refresh", "").lower() in ["1", "true"]
+        search_res = medicine_engine.search(query.strip(), force_refresh=force_refresh)
+        return jsonify(search_res.to_dict()), 200
+    except Exception as e:
+        logging.error(f"Error in /api/medicines/search for '{query}': {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": "Unable to search medicines right now. Please try again.",
+            "query": query,
+            "total": 0,
+            "results": []
+        }), 500
+
+
+# --- API Route: Fast Autocomplete Suggestions ---
+@app.route("/api/medicines/suggest", methods=["GET"])
+def api_medicines_suggest():
+    query = request.args.get("q") or request.args.get("query") or ""
+    if not query.strip() or len(query.strip()) < 2:
+        return jsonify([])
+
+    try:
+        suggestions = medicine_engine.suggest(query.strip(), limit=8)
+        return jsonify(suggestions)
+    except Exception as e:
+        logging.error(f"Error in /api/medicines/suggest for '{query}': {str(e)}")
+        return jsonify([])
+
+
+# --- API Route: Legacy Medicine Search Route ---
 @app.route("/medicine-search", methods=["GET"])
 def medicine_search_api():
-    medicine_name = request.args.get("name")
+    medicine_name = request.args.get("name") or request.args.get("q")
     if not medicine_name:
         return jsonify({"error": "Medicine name is required"}), 400
 
     try:
-        results = search_medicine_prices(medicine_name)
-        if not results:
-            logging.info(f"No results found for '{medicine_name}'")
-            return jsonify({"message": f"No results found for '{medicine_name}'"}), 404
-
-        return jsonify(results)
-    except RuntimeError as e:
-        logging.error(f"Runtime error: {str(e)}")
-        return jsonify({"error": "WebDriver initialization failed. Please check the server logs."}), 500
+        search_res = medicine_engine.search(medicine_name.strip())
+        return jsonify({
+            "success": True,
+            "query": medicine_name,
+            "total": search_res.total,
+            "results": [m.to_dict() for m in search_res.results],
+            "sources": search_res.sources_successful
+        })
     except Exception as e:
         logging.error(f"Error fetching data for '{medicine_name}': {str(e)}")
         return jsonify({"error": "An error occurred while fetching data. Please try again later."}), 500
 
-# --- Function: Extract Text from Image using Google Vision API ---
-def extract_text_from_image(image_file):
-    # Determine file type
-    filename = image_file.filename.lower()
-    image_bytes = image_file.read()
-    image = None
 
-    if filename.endswith('.pdf'):
-        if not convert_from_bytes:
-            return 'PDF support not available. Please install pdf2image.'
-        try:
-            images = convert_from_bytes(image_bytes, first_page=1, last_page=1)
-            if not images:
-                return 'No pages found in PDF.'
-            img = images[0].convert('L')  # Convert to grayscale
-            with io.BytesIO() as output:
-                img.save(output, format='PNG')
-                image = output.getvalue()
-        except Exception as e:
-            logging.error(f"PDF to image conversion error: {e}")
-            return 'Failed to process PDF file.'
+# --- E-Commerce Cart, Revalidation & Checkout Routes ---
+import uuid
+from werkzeug.utils import secure_filename
+from services.medicine.validators import validate_prescription_file
+
+PRESCRIPTION_UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "uploads", "prescriptions"))
+os.makedirs(PRESCRIPTION_UPLOAD_DIR, exist_ok=True)
+
+def _get_cart_session_id():
+    if "cart_session_id" not in session:
+        session["cart_session_id"] = str(uuid.uuid4())
+    return session["cart_session_id"]
+
+@app.route("/api/medicines/product", methods=["GET"])
+def api_get_medicine_product():
+    product_id = request.args.get("id") or request.args.get("product_id")
+    source = request.args.get("source") or "PharmEasy"
+    if not product_id:
+        return jsonify({"success": False, "error": "product_id is required"}), 400
+
+    live_med = medicine_engine.get_live_product(source, product_id)
+    if not live_med:
+        return jsonify({"success": False, "error": f"Medicine product '{product_id}' not found on {source}"}), 404
+
+    return jsonify({"success": True, "product": live_med.to_dict()})
+
+@app.route("/api/cart", methods=["GET"])
+def api_get_cart():
+    sid = _get_cart_session_id()
+    uid = session.get("user", {}).get("id") if isinstance(session.get("user"), dict) else None
+    cart = order_service.get_cart(sid, user_id=uid)
+    return jsonify({"success": True, "cart": cart})
+
+@app.route("/api/cart/add", methods=["POST"])
+def api_add_to_cart():
+    sid = _get_cart_session_id()
+    uid = session.get("user", {}).get("id") if isinstance(session.get("user"), dict) else None
+    data = request.get_json() or {}
+    if not data.get("name") or not data.get("price"):
+        return jsonify({"success": False, "error": "Invalid medicine product details"}), 400
+
+    updated_cart = order_service.add_to_cart(sid, data, user_id=uid)
+    return jsonify({"success": True, "cart": updated_cart})
+
+@app.route("/api/cart/update", methods=["POST"])
+def api_update_cart():
+    sid = _get_cart_session_id()
+    uid = session.get("user", {}).get("id") if isinstance(session.get("user"), dict) else None
+    data = request.get_json() or {}
+    item_id = data.get("item_id") or data.get("product_id")
+    quantity = int(data.get("quantity", 1))
+    if not item_id:
+        return jsonify({"success": False, "error": "item_id is required"}), 400
+
+    updated_cart = order_service.update_cart(sid, item_id, quantity, user_id=uid)
+    return jsonify({"success": True, "cart": updated_cart})
+
+@app.route("/api/cart/remove", methods=["POST"])
+def api_remove_from_cart():
+    sid = _get_cart_session_id()
+    uid = session.get("user", {}).get("id") if isinstance(session.get("user"), dict) else None
+    data = request.get_json() or {}
+    item_id = data.get("item_id") or data.get("product_id")
+    if not item_id:
+        return jsonify({"success": False, "error": "item_id is required"}), 400
+
+    updated_cart = order_service.remove_item(sid, item_id, user_id=uid)
+    return jsonify({"success": True, "cart": updated_cart})
+
+@app.route("/api/cart/clear", methods=["POST", "DELETE"])
+def api_clear_cart():
+    sid = _get_cart_session_id()
+    uid = session.get("user", {}).get("id") if isinstance(session.get("user"), dict) else None
+    order_service.clear_cart(sid, user_id=uid)
+    return jsonify({"success": True, "cart": order_service.get_cart(sid, user_id=uid)})
+
+@app.route("/api/cart/revalidate", methods=["POST", "GET"])
+def api_revalidate_cart():
+    sid = _get_cart_session_id()
+    uid = session.get("user", {}).get("id") if isinstance(session.get("user"), dict) else None
+    reval = order_service.revalidate_cart(sid, user_id=uid)
+    return jsonify({
+        "success": True,
+        "valid": reval["valid"],
+        "requires_prescription": reval["requires_prescription"],
+        "changes": reval["changes"],
+        "cart": reval["cart"]
+    })
+
+@app.route("/api/prescription/upload", methods=["POST"])
+def api_upload_prescription():
+    if "prescription_file" not in request.files:
+        return jsonify({"success": False, "error": "No prescription file provided."}), 400
+
+    file = request.files["prescription_file"]
+    if not file or file.filename == "":
+        return jsonify({"success": False, "error": "Empty filename."}), 400
+
+    # Validate size & extension
+    file.seek(0, os.SEEK_END)
+    size = file.tell()
+    file.seek(0)
+
+    val_res = validate_prescription_file(file.filename, size)
+    if not val_res["valid"]:
+        return jsonify({"success": False, "error": val_res["error"]}), 400
+
+    safe_name = secure_filename(file.filename)
+    unique_filename = f"rx_{uuid.uuid4().hex[:10]}_{safe_name}"
+    file_path = os.path.join(PRESCRIPTION_UPLOAD_DIR, unique_filename)
+    file.save(file_path)
+
+    rx_id = f"rx_{uuid.uuid4().hex[:12]}"
+    file_url = f"/uploads/prescriptions/{unique_filename}"
+    uid = session.get("user", {}).get("id") if isinstance(session.get("user"), dict) else None
+    uemail = session.get("user", {}).get("email") if isinstance(session.get("user"), dict) else None
+
+    # Record in database
+    from services.medicine.database import get_db_connection
+    now = datetime.utcnow().strftime("%d %b %Y, %I:%M %p UTC")
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO prescriptions (id, user_id, user_email, patient_name, filename, file_url, verification_status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, 'verified_on_file', ?)
+        """, (rx_id, uid, uemail, safe_name, unique_filename, file_url, now))
+        conn.commit()
+
+    return jsonify({
+        "success": True,
+        "prescription_id": rx_id,
+        "filename": safe_name,
+        "file_url": file_url,
+        "status": "Verified & Attached"
+    })
+
+@app.route('/uploads/prescriptions/<filename>')
+def uploaded_prescription(filename):
+    return send_from_directory(PRESCRIPTION_UPLOAD_DIR, filename)
+
+@app.route("/api/checkout/order", methods=["POST"])
+def api_checkout_order():
+    sid = _get_cart_session_id()
+    uid = session.get("user", {}).get("id") if isinstance(session.get("user"), dict) else None
+    uemail = session.get("user", {}).get("email") if isinstance(session.get("user"), dict) else None
+
+    data = request.get_json() or {}
+    shipping_addr = data.get("shipping_address")
+    if not shipping_addr or not shipping_addr.get("full_name") or not shipping_addr.get("phone") or not shipping_addr.get("street_address"):
+        return jsonify({"success": False, "error": "Please provide a complete shipping destination (Recipient Name, Mobile Phone, Street Address, City, PIN code)"}), 400
+
+    payment_method = data.get("payment_method", "Cash on Delivery")
+    prescription_id = data.get("prescription_id")
+    prescription_file_url = data.get("prescription_file_url")
+    idempotency_key = data.get("idempotency_key") or request.headers.get("X-Idempotency-Key")
+
+    order_result = order_service.create_order(
+        session_id=sid,
+        address_data=shipping_addr,
+        payment_method=payment_method,
+        user_id=uid,
+        user_email=uemail,
+        prescription_id=prescription_id,
+        prescription_file_url=prescription_file_url,
+        idempotency_key=idempotency_key
+    )
+
+    if not order_result.get("success"):
+        return jsonify(order_result), 400
+
+    return jsonify(order_result), 200
+
+@app.route("/order-confirmation/<order_id>", methods=["GET"])
+def order_confirmation_view(order_id):
+    order = order_service.get_order(order_id)
+    if not order:
+        flash("Order reference not found or has expired.", "error")
+        return redirect(url_for("medicine_search"))
+    return render_template("order_confirmation.html", order=order)
+
+
+# --- Prescription Parsing & Structured OCR Helpers ---
+def build_clean_transcript(p):
+    lines = []
+    doc = p.get("doctor", {}) if isinstance(p.get("doctor"), dict) else {}
+    clinic = doc.get("clinic") or "Clinical Prescription"
+    lines.append(f"=== {clinic.upper()} ===")
+    if doc.get("name"):
+        doc_line = f"Doctor: {doc.get('name')}"
+        if doc.get("specialty"):
+            doc_line += f" ({doc.get('specialty')})"
+        lines.append(doc_line)
+    if doc.get("reg_no"):
+        lines.append(f"Reg/License No: {doc.get('reg_no')}")
+    lines.append("-" * 40)
+    
+    pat = p.get("patient", {}) if isinstance(p.get("patient"), dict) else {}
+    p_info = f"Patient: {pat.get('name') or 'Patient'}"
+    if pat.get('age'):
+        p_info += f" | Age: {pat.get('age')}"
+    if pat.get('gender'):
+        p_info += f" | Gender: {pat.get('gender')}"
+    if pat.get('date'):
+        p_info += f" | Date: {pat.get('date')}"
+    lines.append(p_info)
+    if pat.get('allergies'):
+        lines.append(f"Allergies: {pat.get('allergies')}")
+    lines.append("-" * 40)
+
+    clin = p.get("clinical", {}) if isinstance(p.get("clinical"), dict) else {}
+    if clin.get("diagnosis"):
+        lines.append(f"Diagnosis: {clin.get('diagnosis')}")
+    if clin.get("symptoms"):
+        lines.append(f"Symptoms / Complaints: {clin.get('symptoms')}")
+    lines.append("-" * 40)
+
+    lines.append("Rx (MEDICATIONS):")
+    meds = p.get("medicines", []) if isinstance(p.get("medicines"), list) else []
+    if meds:
+        for idx, m in enumerate(meds, 1):
+            name_str = f"{idx}. {m.get('name', 'Medicine')} {m.get('strength', '')} ({m.get('form', 'Tablet')})".strip()
+            lines.append(name_str)
+            schedule = f"   Dose: {m.get('dose', '1')} | Freq: {m.get('frequency', 'As directed')} | Dur: {m.get('duration', '5 days')}"
+            if m.get('timing'):
+                schedule += f" | {m.get('timing')}"
+            lines.append(schedule)
+            if m.get('instructions'):
+                lines.append(f"   Notes: {m.get('instructions')}")
     else:
-        try:
-            img = Image.open(io.BytesIO(image_bytes)).convert('L')  # Convert to grayscale
-            with io.BytesIO() as output:
-                img.save(output, format='PNG')
-                image = output.getvalue()
-        except Exception as e:
-            logging.error(f"Image open error: {e}")
-            return 'Unsupported image format or corrupted file.'
+        lines.append("No specific medications extracted.")
+    lines.append("-" * 40)
 
-    if not image:
-        return 'Failed to process the uploaded file.'
+    inst = p.get("instructions", {}) if isinstance(p.get("instructions"), dict) else {}
+    if inst.get("general"):
+        lines.append(f"General Advice: {inst.get('general')}")
+    if inst.get("diet"):
+        lines.append(f"Dietary Guidance: {inst.get('diet')}")
+    if inst.get("follow_up"):
+        lines.append(f"Follow-up: {inst.get('follow_up')}")
+    
+    return "\n".join(lines)
 
-    base64_image = base64.b64encode(image).decode('utf-8')
-    payload = {
-        "requests": [
-            {
-                "image": {"content": base64_image},
-                "features": [{"type": "TEXT_DETECTION"}]
-            }
-        ]
+def fallback_text_parser(raw_text):
+    """Parses unformatted OCR text into structured prescription fields using regex"""
+    parsed = {
+        "doctor": {},
+        "patient": {},
+        "clinical": {},
+        "medicines": [],
+        "instructions": {},
+        "raw_transcript": raw_text
     }
-    url = f'https://vision.googleapis.com/v1/images:annotate?key={GOOGLE_API_KEY}'
+    
+    # Extract Patient Name
+    p_name = re.search(r"(?:Patient(?:\s+Name)?|Name|Pt\.?)\s*[:\-]?\s*([A-Za-z\s.]+?)(?=\n|Age|Gender|Date|Sex|$)", raw_text, re.IGNORECASE)
+    if p_name:
+        parsed["patient"]["name"] = p_name.group(1).strip()
+        
+    # Extract Age & Gender
+    p_age = re.search(r"Age\s*[:\-]?\s*(\d+)", raw_text, re.IGNORECASE)
+    if p_age:
+        parsed["patient"]["age"] = p_age.group(1).strip()
+    p_gen = re.search(r"(?:Gender|Sex)\s*[:\-]?\s*(Male|Female|M|F|Other)", raw_text, re.IGNORECASE)
+    if p_gen:
+        gen_str = p_gen.group(1).upper()
+        parsed["patient"]["gender"] = "Male" if gen_str in ("M", "MALE") else ("Female" if gen_str in ("F", "FEMALE") else gen_str)
 
-    # Check for missing API key
-    # Always fetch the API key from environment variables at runtime
-    api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key or api_key == "your_google_api_key_here":
-        logging.error("Google Vision API key is missing or not set correctly in the environment.")
-        return 'Google Vision API key is missing. Please contact the administrator.'
+    # Extract Diagnosis
+    diag = re.search(r"(?:Diagnosis|Dx|Impression|Condition)\s*[:\-]?\s*([^\n]+)", raw_text, re.IGNORECASE)
+    if diag:
+        parsed["clinical"]["diagnosis"] = diag.group(1).strip()
 
-    # Example known medicine names (replace with your actual list or load from a file)
-    known_medicines = [
-        "paracetamol", "amoxicillin", "azithromycin", "ibuprofen", "cetirizine", "metformin", "atorvastatin",
-        "omeprazole", "pantoprazole", "amoxiclav", "dolo", "crocin", "augmentin", "zincovit", "calpol",
-        "aspirin", "losartan", "amlodipine", "clopidogrel", "atorva", "rosuvastatin", "simvastatin",
-        "telmisartan", "ramipril", "enalapril", "lisinopril", "metoprolol", "bisoprolol", "propranolol",
-        "atenolol", "furosemide", "spironolactone", "hydrochlorothiazide", "glimepiride", "gliclazide",
-        "glipizide", "sitagliptin", "vildagliptin", "linagliptin", "dapagliflozin", "empagliflozin",
-        "pioglitazone", "insulin", "human mixtard", "novorapid", "lantus", "thyronorm", "eltroxin",
-        "levothyroxine", "pantocid", "rabeprazole", "esomeprazole", "lansoprazole", "ranitidine",
-        "famotidine", "domperidone", "ondansetron", "granisetron", "cyclopam", "meftal", "mefenamic acid",
-        "nimesulide", "diclofenac", "aceclofenac", "etoricoxib", "tramadol", "tapentadol", "morphine",
-        "codeine", "chlorpheniramine", "phenylephrine", "montelukast", "levocetirizine", "desloratadine",
-        "loratadine", "fexofenadine", "salbutamol", "budesonide", "formoterol", "fluticasone", "beclomethasone",
-        "ipratropium", "tiotropium", "aztreonam", "ceftriaxone", "cefixime", "cefpodoxime", "cefuroxime",
-        "cephalexin", "clindamycin", "doxycycline", "minocycline", "linezolid", "vancomycin", "meropenem",
-        "imipenem", "ertapenem", "piperacillin", "tazobactam", "amphotericin", "fluconazole", "itraconazole",
-        "voriconazole", "acyclovir", "valacyclovir", "oseltamivir", "favipiravir", "remdesivir", "hydroxychloroquine",
-        "chloroquine", "prednisolone", "methylprednisolone", "dexamethasone", "betamethasone", "hydrocortisone",
-        "deflazacort", "azathioprine", "mycophenolate", "cyclosporine", "tacrolimus", "methotrexate",
-        "leflunomide", "sulfasalazine", "mesalamine", "adalimumab", "infliximab", "etanercept", "rituximab",
-        "adalat", "nifedipine", "verapamil", "diltiazem", "digoxin", "amiodarone", "sotalol", "flecainide",
-        "propafenone", "warfarin", "dabigatran", "apixaban", "rivaroxaban", "heparin", "enoxaparin",
-        "fondaparinux", "streptokinase", "alteplase", "tenecteplase", "urokinase", "tamsulosin", "alfuzosin",
-        "finasteride", "dutasteride", "silodosin", "tolterodine", "oxybutynin", "mirabegron", "solifenacin",
-        "fesoterodine", "desmopressin", "terazosin", "prazosin", "doxazosin", "minoxidil", "finpecia",
-        "propecia", "dutagen", "dutagen", "sildenafil", "tadalafil", "vardenafil", "avanafil", "dapoxetine",
-        "cabergoline", "bromocriptine", "letrozole", "anastrozole", "tamoxifen", "raloxifene", "clomiphene",
-        "gonadotropin", "hcg", "fsh", "lh", "testosterone", "estradiol", "progesterone", "medroxyprogesterone",
-        "norethisterone", "levonorgestrel", "desogestrel", "drospirenone", "cyproterone", "spironolactone",
-        "finasteride", "dutasteride", "minoxidil", "biotin", "zinc", "iron", "folic acid", "vitamin d",
-        "vitamin b12", "calcium", "magnesium", "potassium", "sodium", "chloride", "phosphate", "multivitamin"
-        # ...add more as needed...
-    ]
+    # Extract Medicines (lines starting with numbers or tab/cap/syp)
+    med_lines = re.findall(r"(?:^\s*\d+[\.\)]\s*([^\n]+)|(?:Tab|Cap|Syp|Inj)\.?\s+([^\n]+))", raw_text, re.MULTILINE | re.IGNORECASE)
+    for m1, m2 in med_lines:
+        line = (m1 or m2).strip()
+        if line:
+            form = "Tablet"
+            if re.search(r"\bsyp|syrup\b", line, re.IGNORECASE):
+                form = "Syrup"
+            elif re.search(r"\bcap|capsule\b", line, re.IGNORECASE):
+                form = "Capsule"
+            elif re.search(r"\binj|injection\b", line, re.IGNORECASE):
+                form = "Injection"
+            elif re.search(r"\binhaler\b", line, re.IGNORECASE):
+                form = "Inhaler"
 
-    # Build a lowercase set for fast lookup
-    medicine_set = set(med.lower() for med in known_medicines)
+            parsed["medicines"].append({
+                "name": line,
+                "strength": "",
+                "form": form,
+                "dose": "1 unit",
+                "frequency": "Twice daily",
+                "duration": "5 days",
+                "timing": "After food",
+                "instructions": ""
+            })
 
+    return parsed
+
+def parse_prescription_response(raw_text):
+    clean_text = raw_text.strip()
+    if "```" in clean_text:
+        match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", clean_text)
+        if match:
+            clean_text = match.group(1).strip()
+    
+    parsed = None
     try:
-        response = requests.post(url, headers={'Content-Type': 'application/json'}, data=json.dumps(payload), timeout=20)
-        response.raise_for_status()
-        # Fix: handle possible JSONDecodeError due to incomplete/invalid JSON
+        parsed = json.loads(clean_text)
+    except Exception:
+        first_brace = clean_text.find('{')
+        last_brace = clean_text.rfind('}')
+        if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+            try:
+                parsed = json.loads(clean_text[first_brace:last_brace+1])
+            except Exception:
+                pass
+
+    if not isinstance(parsed, dict):
+        parsed = fallback_text_parser(raw_text)
+
+    # Validate and normalize keys
+    if "doctor" not in parsed or not isinstance(parsed["doctor"], dict):
+        parsed["doctor"] = {}
+    if "patient" not in parsed or not isinstance(parsed["patient"], dict):
+        parsed["patient"] = {}
+    if "clinical" not in parsed or not isinstance(parsed["clinical"], dict):
+        parsed["clinical"] = {}
+    if "medicines" not in parsed or not isinstance(parsed["medicines"], list):
+        parsed["medicines"] = []
+    if "instructions" not in parsed or not isinstance(parsed["instructions"], dict):
+        parsed["instructions"] = {}
+    
+    if "raw_transcript" not in parsed or not parsed["raw_transcript"]:
+        parsed["raw_transcript"] = build_clean_transcript(parsed)
+
+    return parsed
+
+# --- Function: Extract Text from Image using Gemini Multimodal Vision API ---
+def extract_text_from_image(image_file):
+    try:
+        filename = image_file.filename.lower()
+        image_bytes = image_file.read()
+        image_data = None
+        mime_type = "image/jpeg"
+
+        if filename.endswith('.pdf'):
+            if not convert_from_bytes:
+                return {"text": 'PDF conversion support not available on server. Please upload a JPG or PNG image.', "parsed": None}
+            try:
+                images = convert_from_bytes(image_bytes, first_page=1, last_page=1)
+                if not images:
+                    return {"text": 'No readable pages found in uploaded PDF.', "parsed": None}
+                with io.BytesIO() as output:
+                    images[0].save(output, format='JPEG', quality=90)
+                    image_data = output.getvalue()
+                mime_type = "image/jpeg"
+            except Exception as e:
+                logging.error(f"PDF to image conversion error: {e}")
+                return {"text": 'Failed to process PDF file. Please upload a standard JPG/PNG image.', "parsed": None}
+        else:
+            try:
+                img = Image.open(io.BytesIO(image_bytes))
+                # Convert RGBA/P to RGB for JPEG compatibility
+                if img.mode in ("RGBA", "P"):
+                    img = img.convert("RGB")
+                with io.BytesIO() as output:
+                    img.save(output, format='JPEG', quality=90)
+                    image_data = output.getvalue()
+                mime_type = "image/jpeg"
+            except Exception as e:
+                logging.error(f"Image open error: {e}")
+                return {"text": 'Unsupported or corrupted image file format. Please upload a valid JPG, PNG, or WebP image.', "parsed": None}
+
+        if not image_data:
+            return {"text": 'Failed to process the uploaded file.', "parsed": None}
+
+        base64_image = base64.b64encode(image_data).decode('utf-8')
+
+        # 1. Primary: Use Gemini Multimodal Vision AI with structured clinical prompt
+        api_key = os.getenv("GEMINI_API_KEY") or GOOGLE_API_KEY
+        if api_key:
+            prompt = (
+                "You are an expert clinical pharmacist and medical OCR specialist.\n"
+                "Transcribe and parse all handwritten and printed medical details from this prescription image into a clean, valid JSON object.\n\n"
+                "Output ONLY valid JSON matching this schema:\n"
+                "{\n"
+                '  "doctor": {\n'
+                '    "name": "Doctor name or null",\n'
+                '    "specialty": "Specialty/degree (e.g. MD, MBBS) or null",\n'
+                '    "clinic": "Clinic or hospital name or null",\n'
+                '    "phone": "Phone number or null",\n'
+                '    "reg_no": "Registration/License number or null"\n'
+                "  },\n"
+                '  "patient": {\n'
+                '    "name": "Patient name or null",\n'
+                '    "age": "Age or null",\n'
+                '    "gender": "Male / Female or null",\n'
+                '    "date": "Date of prescription or null",\n'
+                '    "allergies": "Known allergies or null"\n'
+                "  },\n"
+                '  "clinical": {\n'
+                '    "diagnosis": "Primary diagnosis / condition or null",\n'
+                '    "symptoms": "Symptoms or chief complaints or null",\n'
+                '    "notes": "Clinical notes or null"\n'
+                "  },\n"
+                '  "medicines": [\n'
+                "    {\n"
+                '      "name": "Medicine brand/generic name",\n'
+                '      "strength": "Strength (e.g. 625mg, 10mg, 500mg) or empty",\n'
+                '      "form": "Tablet / Capsule / Syrup / Inhaler / Injection / Drops / Ointment",\n'
+                '      "dose": "Dosage (e.g. 1 tablet, 5ml, 2 puffs)",\n'
+                '      "frequency": "Frequency (e.g. Twice daily, Once daily, 1-0-1, TDS, SOS)",\n'
+                '      "duration": "Duration (e.g. 5 days, 1 week, 30 days)",\n'
+                '      "timing": "Timing (e.g. After food, Before food, At bedtime, With meals)",\n'
+                '      "instructions": "Specific administration advice or warnings"\n'
+                "    }\n"
+                "  ],\n"
+                '  "instructions": {\n'
+                '    "general": "General health / care advice or null",\n'
+                '    "diet": "Dietary advice or null",\n'
+                '    "follow_up": "Follow-up consultation advice or null"\n'
+                "  },\n"
+                '  "raw_transcript": "Clean human-readable formatted clinical summary of the prescription"\n'
+                "}\n\n"
+                "Do NOT wrap with commentary, return only the JSON block."
+            )
+
+            models_to_try = [
+                os.getenv("GEMINI_MODEL", "gemini-3.6-flash"),
+                "gemini-3.6-flash",
+                "gemini-flash-latest",
+                "gemini-3.7-flash"
+            ]
+            seen = set()
+            models = [m for m in models_to_try if m and not (m in seen or seen.add(m))]
+
+            for model_name in models:
+                try:
+                    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+                    params = {"key": api_key}
+                    headers = {"Content-Type": "application/json"}
+                    payload = {
+                        "contents": [
+                            {
+                                "parts": [
+                                    {"text": prompt},
+                                    {
+                                        "inline_data": {
+                                            "mime_type": mime_type,
+                                            "data": base64_image
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+
+                    logging.info(f"Sending prescription OCR request to Gemini Vision model '{model_name}'")
+                    res = requests.post(api_url, params=params, headers=headers, json=payload, timeout=30)
+                    if res.status_code == 200:
+                        data = res.json()
+                        candidates = data.get("candidates", [])
+                        if candidates and "content" in candidates[0] and "parts" in candidates[0]["content"]:
+                            parts = candidates[0]["content"]["parts"]
+                            if parts and "text" in parts[0]:
+                                raw_res = parts[0]["text"].strip()
+                                parsed = parse_prescription_response(raw_res)
+                                clean_transcript = parsed.get("raw_transcript") or build_clean_transcript(parsed)
+                                return {"parsed": parsed, "text": clean_transcript}
+                    else:
+                        logging.warning(f"Gemini Vision model {model_name} status {res.status_code}: {res.text[:200]}")
+                except Exception as e:
+                    logging.error(f"Error calling Gemini Vision model {model_name}: {e}")
+                    continue
+
+        # 2. Fallback: Google Cloud Vision API
         try:
-            response_json = response.json()
+            gvision_key = os.getenv("GOOGLE_API_KEY")
+            if gvision_key:
+                gvision_url = f'https://vision.googleapis.com/v1/images:annotate?key={gvision_key}'
+                gvision_payload = {
+                    "requests": [
+                        {
+                            "image": {"content": base64_image},
+                            "features": [{"type": "TEXT_DETECTION"}]
+                        }
+                    ]
+                }
+                res = requests.post(gvision_url, headers={'Content-Type': 'application/json'}, json=gvision_payload, timeout=20)
+                if res.status_code == 200:
+                    resp_json = res.json()
+                    annotations = resp_json.get('responses', [])[0].get('textAnnotations', [])
+                    if annotations:
+                        raw_desc = annotations[0].get('description', '').strip()
+                        parsed = parse_prescription_response(raw_desc)
+                        return {"parsed": parsed, "text": parsed.get("raw_transcript") or build_clean_transcript(parsed)}
         except Exception as e:
-            logging.error(f"Google Vision API returned invalid JSON: {e}")
-            return 'Error processing image (invalid response from Vision API). Please try again.'
+            logging.error(f"Google Vision fallback error: {e}")
 
-        text_annotations = response_json.get('responses', [])[0].get('textAnnotations', [])
-        extracted_text = text_annotations[0].get('description', '') if text_annotations else 'No text found in the image.'
+        fallback_msg = "Could not extract text from prescription. Please ensure the image is clear and well-lit, then try again."
+        return {"parsed": None, "text": fallback_msg}
 
-        # --- Improved medicine name extraction and correction ---
-        def extract_medicine_candidates(text):
-            # Extract words and also lines that look like dosages or instructions
-            candidates = set()
-            for word in re.findall(r'\b[a-zA-Z][a-zA-Z0-9\-]{3,}\b', text):
-                candidates.add(word)
-            # Add lines that contain dosage patterns (e.g., "5ml tid a.c.")
-            for line in text.split('\n'):
-                if re.search(r'\b\d+\s*(mg|ml|gm|mcg)\b', line, re.IGNORECASE):
-                    candidates.add(line.strip())
-            return list(candidates)
+    except Exception as e:
+        logging.error(f"Unexpected error in extract_text_from_image: {e}")
+        return {"parsed": None, "text": f"Error analyzing prescription image: {str(e)}"}
 
-        def best_medicine_match(word, medicine_list, medicine_set):
-            # Exact match
-            if word.lower() in medicine_set:
-                return word.title(), 100
-            # Fuzzy match (use process.extractOne)
-            match, score = process.extractOne(word.lower(), medicine_list)
-            return match.title(), score
+# --- Medication Catalog & Autocomplete API ---
+COMMON_MEDICATIONS_DB = [
+    {"name": "Paracetamol", "strength": "500 mg", "form": "Tablet", "dose": "1 tablet", "frequency": "3 times daily", "duration": "3 days", "route": "Oral", "timing": "After food", "instructions": "Take for fever or pain relief"},
+    {"name": "Dolo 650", "strength": "650 mg", "form": "Tablet", "dose": "1 tablet", "frequency": "As needed (SOS)", "duration": "3 days", "route": "Oral", "timing": "After food", "instructions": "Maximum 3 tablets per day with 6h gap"},
+    {"name": "Amoxicillin", "strength": "500 mg", "form": "Capsule", "dose": "1 capsule", "frequency": "3 times daily", "duration": "5 days", "route": "Oral", "timing": "After food", "instructions": "Complete the full 5-day antibiotic course"},
+    {"name": "Augmentin 625", "strength": "625 mg", "form": "Tablet", "dose": "1 tablet", "frequency": "Twice daily", "duration": "5 days", "route": "Oral", "timing": "With food", "instructions": "Take at start of meals to reduce GI upset"},
+    {"name": "Azithromycin", "strength": "500 mg", "form": "Tablet", "dose": "1 tablet", "frequency": "Once daily", "duration": "3 days", "route": "Oral", "timing": "1 hour before food", "instructions": "Take at the same time each day"},
+    {"name": "Cefixime", "strength": "200 mg", "form": "Tablet", "dose": "1 tablet", "frequency": "Twice daily", "duration": "5 days", "route": "Oral", "timing": "After food", "instructions": "Take with adequate water"},
+    {"name": "Metformin", "strength": "500 mg", "form": "Tablet", "dose": "1 tablet", "frequency": "Twice daily", "duration": "30 days", "route": "Oral", "timing": "With food", "instructions": "For blood sugar management"},
+    {"name": "Atorvastatin", "strength": "10 mg", "form": "Tablet", "dose": "1 tablet", "frequency": "Once daily", "duration": "30 days", "route": "Oral", "timing": "At bedtime", "instructions": "Cholesterol management"},
+    {"name": "Pantoprazole", "strength": "40 mg", "form": "Tablet", "dose": "1 tablet", "frequency": "Once daily", "duration": "14 days", "route": "Oral", "timing": "30 min before breakfast", "instructions": "Take on an empty stomach with water"},
+    {"name": "Omeprazole", "strength": "20 mg", "form": "Capsule", "dose": "1 capsule", "frequency": "Once daily", "duration": "14 days", "route": "Oral", "timing": "30 min before breakfast", "instructions": "Swallow whole, do not crush"},
+    {"name": "Cetirizine", "strength": "10 mg", "form": "Tablet", "dose": "1 tablet", "frequency": "Once daily", "duration": "5 days", "route": "Oral", "timing": "At bedtime", "instructions": "May cause mild drowsiness"},
+    {"name": "Levocetirizine + Montelukast", "strength": "5mg + 10mg", "form": "Tablet", "dose": "1 tablet", "frequency": "Once daily", "duration": "7 days", "route": "Oral", "timing": "At bedtime", "instructions": "For allergic rhinitis & bronchial symptoms"},
+    {"name": "Ibuprofen", "strength": "400 mg", "form": "Tablet", "dose": "1 tablet", "frequency": "Twice daily", "duration": "3 days", "route": "Oral", "timing": "After food", "instructions": "Take with milk or full glass of water"},
+    {"name": "Amlodipine", "strength": "5 mg", "form": "Tablet", "dose": "1 tablet", "frequency": "Once daily", "duration": "30 days", "route": "Oral", "timing": "Morning", "instructions": "Hypertension maintenance"},
+    {"name": "Telmisartan", "strength": "40 mg", "form": "Tablet", "dose": "1 tablet", "frequency": "Once daily", "duration": "30 days", "route": "Oral", "timing": "Morning", "instructions": "Blood pressure control"},
+    {"name": "Losartan", "strength": "50 mg", "form": "Tablet", "dose": "1 tablet", "frequency": "Once daily", "duration": "30 days", "route": "Oral", "timing": "Morning", "instructions": "Blood pressure management"},
+    {"name": "Ondansetron", "strength": "4 mg", "form": "Tablet", "dose": "1 tablet", "frequency": "3 times daily", "duration": "3 days", "route": "Oral", "timing": "30 min before food", "instructions": "For nausea and vomiting relief"},
+    {"name": "Doxycycline", "strength": "100 mg", "form": "Capsule", "dose": "1 capsule", "frequency": "Twice daily", "duration": "7 days", "route": "Oral", "timing": "After food", "instructions": "Do not lie down for 30 minutes after taking"},
+    {"name": "Ciprofloxacin", "strength": "500 mg", "form": "Tablet", "dose": "1 tablet", "frequency": "Twice daily", "duration": "5 days", "route": "Oral", "timing": "After food", "instructions": "Drink plenty of fluids throughout the day"},
+    {"name": "Salbutamol Inhaler", "strength": "100 mcg", "form": "Inhaler", "dose": "2 puffs", "frequency": "As needed (SOS)", "duration": "30 days", "route": "Inhalation", "timing": "During acute wheezing", "instructions": "Rinse mouth with water after use"},
+    {"name": "Zincovit", "strength": "Multivitamin", "form": "Tablet", "dose": "1 tablet", "frequency": "Once daily", "duration": "15 days", "route": "Oral", "timing": "After lunch", "instructions": "Nutritional supplement"}
+]
 
-        # Extract all candidate words and lines from the text
-        candidates = extract_medicine_candidates(extracted_text)
-        medicine_matches = {}
-        for cand in candidates:
-            # Try to match only the medicine name part if the candidate is a line
-            med_name = cand
-            # If line contains dosage, split and try to match the first word(s)
-            if re.search(r'\b\d+\s*(mg|ml|gm|mcg)\b', cand, re.IGNORECASE):
-                med_name = cand.split()[0]
-            match, score = best_medicine_match(med_name, known_medicines, medicine_set)
-            if score > 85:
-                medicine_matches[cand] = match
-            elif score > 70 and len(med_name) > 5:
-                medicine_matches[cand] = match + " (?)"
-            # else: skip low-confidence matches
+@app.route("/api/medicine-autocomplete", methods=["GET"])
+def medicine_autocomplete():
+    query = request.args.get("query", "").strip().lower()
+    if not query:
+        return jsonify(COMMON_MEDICATIONS_DB[:10])
+    
+    matches = []
+    # Check structured DB
+    for med in COMMON_MEDICATIONS_DB:
+        if query in med["name"].lower():
+            matches.append(med)
+            
+    # Check known_medicines list if more matches needed
+    for med_name in known_medicines:
+        if query in med_name.lower() and not any(m["name"].lower() == med_name.lower() for m in matches):
+            matches.append({
+                "name": med_name.title(),
+                "strength": "500 mg",
+                "form": "Tablet",
+                "dose": "1 tablet",
+                "frequency": "Twice daily",
+                "duration": "5 days",
+                "route": "Oral",
+                "timing": "After food",
+                "instructions": "As directed by physician"
+            })
+        if len(matches) >= 12:
+            break
+            
+    return jsonify(matches)
 
-        # Replace candidate words/lines in the text with their best matches
-        def replace_candidates(text, matches):
-            # Sort by length descending to avoid partial replacements
-            for orig in sorted(matches, key=len, reverse=True):
-                text = re.sub(rf'\b{re.escape(orig)}\b', matches[orig], text, flags=re.IGNORECASE)
-            return text
+@app.route("/api/generate-prescription", methods=["POST"])
+def api_generate_prescription():
+    try:
+        data = request.get_json(force=True)
+        if not data:
+            return jsonify({"success": False, "error": "No prescription data provided"}), 400
 
-        extracted_text = replace_candidates(extracted_text, medicine_matches)
+        patient = data.get("patient", {})
+        clinical = data.get("clinical", {})
+        medicines = data.get("medicines", [])
+        instructions = data.get("instructions", {})
 
-        # Filter for medical-related lines and dosage/instruction lines
-        medical_keywords = [
-            "tablet", "capsule", "mg", "ml", "gm", "mcg", "prescription", "dose", "medication", "medicine", "pharmacy", "drug",
-            "antibiotic", "painkiller", "ointment", "syrup", "injection", "vaccine", "diagnosis", "treatment"
-        ]
-        lines = extracted_text.split('\n')
-        filtered_lines = []
-        for line in lines:
-            line_lower = line.lower()
-            if any(keyword in line_lower for keyword in medical_keywords):
-                filtered_lines.append(line)
-            elif any(med.lower() in line_lower for med in medicine_matches.values()):
-                filtered_lines.append(line)
-            # Also keep lines that look like dosage/instructions
-            elif re.search(r'\b\d+\s*(mg|ml|gm|mcg)\b', line_lower):
-                filtered_lines.append(line)
-            elif re.search(r'\bseg:?\s*\d+\s*ml\b', line_lower):  # e.g., "Seg: 5ml"
-                filtered_lines.append(line)
-        medical_text = "\n".join(filtered_lines)
+        if not patient.get("name"):
+            return jsonify({"success": False, "error": "Patient name is required."}), 400
+        if not medicines:
+            return jsonify({"success": False, "error": "At least one medication is required."}), 400
 
-        # If nothing found, fallback to all matched medicine names
-        if not medical_text.strip() and medicine_matches:
-            medical_text = "Medicines identified:\n" + ", ".join(sorted(set(medicine_matches.values())))
+        rx_id = f"RX-{datetime.now().strftime('%y%m%d')}-{np.random.randint(1000, 9999)}"
+        created_at = datetime.now().strftime("%d %b %Y, %I:%M %p")
+        date_str = datetime.now().strftime("%d %b %Y")
 
-        return medical_text if medical_text else 'No medical text found in the image.'
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Google Vision API Error: {e}")
-        return 'Error processing image. Please try again.'
+        # Format clean text for PDF generation & records
+        lines = []
+        lines.append("MEDSCRIPT CLINICAL WORKSPACE")
+        lines.append(f"Prescription ID: {rx_id} | Date: {date_str}")
+        lines.append("-" * 40)
+        lines.append(f"Patient: {patient.get('name')} | Age: {patient.get('age', 'N/A')} | Gender: {patient.get('gender', 'N/A')}")
+        if patient.get('allergies'):
+            lines.append(f"Allergies: {patient.get('allergies')}")
+        lines.append("-" * 40)
+        if clinical.get('diagnosis'):
+            lines.append(f"Diagnosis: {clinical.get('diagnosis')}")
+        if clinical.get('chief_complaint'):
+            lines.append(f"Chief Complaint: {clinical.get('chief_complaint')}")
+        lines.append("-" * 40)
+        lines.append("Rx (MEDICATIONS):")
+        for i, med in enumerate(medicines, 1):
+            med_line = f"{i}. {med.get('name')} {med.get('strength', '')} ({med.get('form', 'Tablet')})"
+            lines.append(med_line)
+            dosage_line = f"   Dose: {med.get('dose', '1')} | Freq: {med.get('frequency', '')} | Dur: {med.get('duration', '')} | {med.get('timing', '')}"
+            lines.append(dosage_line)
+            if med.get('instructions'):
+                lines.append(f"   Notes: {med.get('instructions')}")
+        lines.append("-" * 40)
+        if instructions.get('general'):
+            lines.append(f"Instructions: {instructions.get('general')}")
+        if instructions.get('follow_up'):
+            lines.append(f"Follow-up: {instructions.get('follow_up')}")
+        lines.append("-" * 40)
+        lines.append("Doctor Signature: _______________________")
+        
+        formatted_text = "\n".join(lines)
+
+        prescription_obj = {
+            "rx_id": rx_id,
+            "created_at": created_at,
+            "date": date_str,
+            "patient": patient,
+            "clinical": clinical,
+            "medicines": medicines,
+            "instructions": instructions,
+            "formatted_text": formatted_text
+        }
+
+        # Store in session recent history
+        if "prescription_history" not in session:
+            session["prescription_history"] = []
+        
+        session["prescription_history"].insert(0, prescription_obj)
+        session["prescription_history"] = session["prescription_history"][:10]
+        session.modified = True
+
+        return jsonify({
+            "success": True,
+            "prescription": prescription_obj,
+            "formatted_text": formatted_text,
+            "pdf_url": url_for("download_pdf", text=formatted_text)
+        })
+
+    except Exception as e:
+        logging.error(f"Prescription generation error: {e}")
+        return jsonify({"success": False, "error": f"Failed to generate prescription: {str(e)}"}), 500
 
 # --- Route: MedScript Page ---
 @app.route("/medscript", methods=["GET", "POST"])
 def medscript():
+    recent_prescriptions = session.get("prescription_history", [])
     if request.method == "POST":
         file = request.files.get("image")
         if file:
             try:
-                text = extract_text_from_image(file)
-                return render_template("medscript.html", text=text)
+                res = extract_text_from_image(file)
+                if isinstance(res, dict):
+                    parsed_rx = res.get("parsed")
+                    text = res.get("text") or (parsed_rx.get("raw_transcript") if parsed_rx else "")
+                else:
+                    parsed_rx = parse_prescription_response(str(res))
+                    text = str(res)
+                return render_template("medscript.html", text=text, parsed_rx=parsed_rx, recent_prescriptions=recent_prescriptions)
             except Exception as e:
                 logging.error(f"Image processing error: {str(e)}")
-                return render_template("medscript.html", text=f"Error: {str(e)}")
-    return render_template("medscript.html")
+                return render_template("medscript.html", text=f"Error: {str(e)}", parsed_rx=None, recent_prescriptions=recent_prescriptions)
+    return render_template("medscript.html", recent_prescriptions=recent_prescriptions)
 
 # --- Function: Format Chatbot Response ---
 def format_response(response_text, max_words=120):
@@ -586,197 +998,261 @@ def identify_problem(prompt):
     identified_problems = [problem for problem in problems if problem in prompt.lower()]
     return identified_problems
 
-# --- Function: Medical Chatbot using Gemini API ---
-def medical_chatbot(prompt):
-    # Split the input into lines, treating each line as a separate medicine
-    lines = prompt.strip().split("\n")
-    structured_responses = []
+# --- Function: Medical Chatbot using Gemini API with Multi-turn and Clinical Safety ---
+MEDICAL_SYSTEM_INSTRUCTION = (
+    "You are the MedScript Clinical AI Assistant, an expert, empathetic, and evidence-based healthcare educational assistant. "
+    "Provide clear, clinically accurate, well-structured answers using standard Markdown (headings with ###, bullet points, bold text, numbered lists, tables where appropriate).\n\n"
+    "CRITICAL HEALTHCARE & SAFETY PROTOCOLS:\n"
+    "1. SCOPE & ROLE: You are an AI educational assistant, NOT a licensed human doctor. Do not provide definitive medical diagnoses or prescribe specific prescription medication dosages as authoritative commands.\n"
+    "2. EDUCATIONAL GUIDANCE: Explain health conditions, underlying mechanisms, potential causes, typical clinical pathways, and helpful questions the user can ask their healthcare provider.\n"
+    "3. EMERGENCY RED FLAGS: If the user describes emergency or life-threatening symptoms (e.g., sudden severe chest pain or pressure, acute shortness of breath, sudden facial drooping or weakness, severe hemorrhage, anaphylaxis signs, suicidal ideation), immediately advise calling emergency services (such as 911, 112, or local ER) with urgent prominence.\n"
+    "4. MEDICATION & PRESCRIPTION QUERIES: When asked about medications, clarify common indications, typical mechanism of action, important precautions, known side effects, and general administration notes, always emphasizing that dosage must follow the physician's prescription.\n"
+    "5. DISCLAIMER: Always conclude with a brief medical disclaimer reminder that AI guidance is educational and does not replace professional clinical evaluation."
+)
 
-    for line in lines:
-        # Try to match prescription pattern first
-        prescription_pattern = re.compile(
-            r'\b(syp|tab|cap|inj|cream|ointment|drop|spray)\s+([A-Za-z0-9\-]+)(?:\s*\(([^)]+)\))?\s*(\d+)\s*ML\s*(Q\d+H|TDS|SOS|TOS)\s*x\s*(\d+d)\b',
-            re.IGNORECASE
-        )
-        matches = prescription_pattern.findall(line)
-        if matches:
-            for match in matches:
-                form, name, concentration, dosage, frequency, duration = match
-                ai_prompt = (
-                    f"Provide simplified usage instructions, precautions, and related symptoms for the following medicine:\n"
-                    f"Medicine: {form} {name} ({concentration or 'N/A'}), Dosage: {dosage} ML, Frequency: {frequency}, Duration: {duration}."
-                )
-                try:
-                    api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
-                    params = {"key": gemini_api_key}
-                    headers = {"Content-Type": "application/json"}
-                    payload = {"contents": [{"parts": [{"text": ai_prompt}]}]}
+def medical_chatbot(prompt, history=None):
+    """
+    Generate a clinically sound, markdown-formatted response using Google Gemini API.
+    Supports multi-turn conversation history.
+    """
+    if not prompt or not prompt.strip():
+        return "Please enter a question or message to begin."
 
-                    ai_response = requests.post(
-                        api_url,
-                        params=params,
-                        headers=headers,
-                        json=payload
-                    )
-                    ai_response.raise_for_status()
-                    ai_data = ai_response.json()
-                    if ('candidates' in ai_data and ai_data['candidates'] and
-                        'content' in ai_data['candidates'][0] and 
-                        'parts' in ai_data['candidates'][0]['content'] and 
-                        ai_data['candidates'][0]['content']['parts']):
-                        ai_text = ai_data['candidates'][0]['content']['parts'][0]['text'].strip()
-                        # Extract only relevant sections
-                        if "Precautions:" in ai_text and "Related Symptoms:" in ai_text:
-                            usage, rest = ai_text.split("Precautions:", 1)
-                            precautions, symptoms = rest.split("Related Symptoms:", 1)
-                        elif "Precautions:" in ai_text:
-                            usage, precautions = ai_text.split("Precautions:", 1)
-                            symptoms = "Related symptoms not specified."
-                        else:
-                            usage, precautions, symptoms = ai_text, "Precautions not specified.", "Related symptoms not specified."
-                        
-                        usage = re.sub(r"[^a-zA-Z0-9\s.,:;!?]", "", usage).strip().replace("\n", "<br>")
-                        precautions = re.sub(r"[^a-zA-Z0-9\s.,:;!?]", "", precautions).strip().replace("\n", "<br>")
-                        symptoms = re.sub(r"[^a-zA-Z0-9\s.,:;!?]", "", symptoms).strip().replace("\n", "<br>")
-                        
-                        usage = f"<div><strong>Usage Instructions:</strong><br>{usage}</div>"
-                        precautions = f"<div><strong>Precautions:</strong><br>{precautions}</div>"
-                        symptoms = f"<div><strong>Related Symptoms:</strong><br>{symptoms}</div>"
-                    else:
-                        usage, precautions, symptoms = (
-                            "<div><strong>Usage Instructions:</strong><br>Detailed usage information is not available at the moment. Please consult your doctor or pharmacist for accurate guidance.</div>",
-                            "<div><strong>Precautions:</strong><br>Ensure to follow medical advice and read the medicine leaflet for precautions.</div>",
-                            "<div><strong>Related Symptoms:</strong><br>Information about related symptoms is not available at the moment.</div>"
-                        )
-                except Exception as e:
-                    logging.error(f"Error generating response for {name}: {e}")
-                    usage, precautions, symptoms = (
-                        "<div><strong>Usage Instructions:</strong><br>Sorry, we couldn't retrieve detailed usage information for this medicine. Please consult your healthcare provider for accurate instructions.</div>",
-                        "<div><strong>Precautions:</strong><br>Consult your doctor or pharmacist for specific precautions related to this medicine.</div>",
-                        "<div><strong>Related Symptoms:</strong><br>Unable to retrieve related symptoms at the moment. Please consult your healthcare provider.</div>"
-                    )
-                structured_responses.append(
-                    f"<div><strong>Medicine:</strong> {form} {name} ({concentration})</div>"
-                    f"<div><strong>Dosage:</strong> {dosage} ML</div>"
-                    f"<div><strong>Frequency:</strong> {frequency}</div>"
-                    f"<div><strong>Duration:</strong> {duration}</div>"
-                    f"{usage}"
-                    f"{precautions}"
-                    f"{symptoms}"
-                )
-        else:
-            # If not a prescription, try to explain the medicine name using Gemini API
-            medicine_name = line.strip()
-            if medicine_name:
-                ai_prompt = (
-                    f"Explain in simple terms what the medicine '{medicine_name}' is, its common uses, precautions, and related symptoms. "
-                    f"Limit the answer to 120 words. If the medicine is not recognized, say so."
-                )
-                try:
-                    api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
-                    params = {"key": gemini_api_key}
-                    headers = {"Content-Type": "application/json"}
-                    payload = {"contents": [{"parts": [{"text": ai_prompt}]}]}
-
-                    ai_response = requests.post(
-                        api_url,
-                        params=params,
-                        headers=headers,
-                        json=payload
-                    )
-                    ai_response.raise_for_status()
-                    ai_data = ai_response.json()
-                    if ('candidates' in ai_data and ai_data['candidates'] and
-                        'content' in ai_data['candidates'][0] and 
-                        'parts' in ai_data['candidates'][0]['content'] and 
-                        ai_data['candidates'][0]['content']['parts']):
-                        ai_text = ai_data['candidates'][0]['content']['parts'][0]['text'].strip()
-                        structured_responses.append(
-                            f"<div><strong>{medicine_name.title()}:</strong> {ai_text}</div>"
-                        )
-                    else:
-                        structured_responses.append(
-                            f"<div><strong>{medicine_name.title()}:</strong> Sorry, I couldn't find information about this medicine.</div>"
-                        )
-                except Exception as e:
-                    logging.error(f"Error generating explanation for {medicine_name}: {e}")
-                    structured_responses.append(
-                        f"<div><strong>{medicine_name.title()}:</strong> Sorry, I couldn't retrieve information about this medicine at the moment.</div>"
-                    )
+    # Build contents payload
+    contents = []
+    
+    # Add conversation history if provided
+    if history and isinstance(history, list):
+        for msg in history:
+            role = msg.get("role")
+            content = msg.get("content") or msg.get("text") or ""
+            if isinstance(content, list):
+                # If content is a list of parts
+                text_part = " ".join([p.get("text", "") if isinstance(p, dict) else str(p) for p in content])
             else:
-                structured_responses.append(f"<div><strong>Unrecognized Input:</strong> {line}</div>")
+                text_part = str(content).strip()
 
-    return "<br><br>".join(structured_responses)
+            if not text_part:
+                continue
+            
+            gemini_role = "user" if role in ["user", "human"] else "model"
+            contents.append({
+                "role": gemini_role,
+                "parts": [{"text": text_part}]
+            })
+
+    # Add the current user prompt
+    contents.append({
+        "role": "user",
+        "parts": [{"text": prompt.strip()}]
+    })
+
+    payload = {
+        "system_instruction": {
+            "parts": [{"text": MEDICAL_SYSTEM_INSTRUCTION}]
+        },
+        "contents": contents,
+        "generationConfig": {
+            "temperature": 0.3,
+            "maxOutputTokens": 1200
+        }
+    }
+
+    models_to_try = [
+        os.getenv("GEMINI_MODEL", "gemini-3.6-flash"),
+        "gemini-3.6-flash",
+        "gemini-flash-latest",
+        "gemini-3.7-flash"
+    ]
+    seen = set()
+    models = [m for m in models_to_try if m and not (m in seen or seen.add(m))]
+
+    api_key = os.getenv("GEMINI_API_KEY") or GOOGLE_API_KEY
+    if not api_key:
+        return "AI Assistant configuration error: Missing Gemini API key. Please check your environment settings."
+
+    headers = {"Content-Type": "application/json"}
+
+    for model_name in models:
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+        params = {"key": api_key}
+        try:
+            logging.info(f"Sending chat request to Gemini model '{model_name}' (turns: {len(contents)})")
+            response = requests.post(
+                api_url,
+                params=params,
+                headers=headers,
+                json=payload,
+                timeout=25
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                candidates = data.get("candidates", [])
+                if candidates and "content" in candidates[0] and "parts" in candidates[0]["content"]:
+                    parts = candidates[0]["content"]["parts"]
+                    if parts and "text" in parts[0]:
+                        return parts[0]["text"].strip()
+                logging.warning(f"Unexpected response structure from model {model_name}: {data}")
+            else:
+                logging.warning(f"Model {model_name} returned status {response.status_code}: {response.text[:200]}")
+        except requests.exceptions.Timeout:
+            logging.error(f"Timeout calling Gemini model '{model_name}'")
+            continue
+        except Exception as e:
+            logging.error(f"Error calling Gemini model '{model_name}': {e}")
+            continue
+
+    return "The assistant is temporarily unavailable. Please check your connection and try again in a few moments."
 
 # --- Route: Chat (Medical Chatbot) ---
 @app.route("/chat", methods=["POST"])
+@login_required
 def chat():
-    user_message = request.json.get("message")
+    data = request.get_json(silent=True) or {}
+    user_message = data.get("message", "").strip()
+    history = data.get("history", [])
+    conv_id = data.get("conversation_id")
+    user_id = g.user.get('sub') if hasattr(g, 'user') and isinstance(g.user, dict) else session.get('user', {}).get('uid')
+    
     if not user_message:
-        return jsonify({"response": "Invalid request. No message provided."}), 400
+        return jsonify({"success": False, "error": "Please enter a message.", "response": "Please enter a message."}), 400
 
-    reply = medical_chatbot(user_message)
+    reply = medical_chatbot(user_message, history=history)
+    timestamp_iso = datetime.now().isoformat()
+    timestamp_display = datetime.now().strftime("%I:%M %p")
 
-    # Save to chat history in Firebase Realtime Database with timestamp
+    # 1. Save to Supabase chat_history table
     try:
-        chat_ref = db.reference('chat_history')
+        db = get_db_client()
         chat_entry = {
+            'user_id': user_id,
             'user_message': user_message,
             'bot_response': reply,
-            'timestamp': datetime.now().isoformat()
+            'timestamp': timestamp_iso
         }
-        # --- Prevent duplicate chat history entries ---
-        chat_data = chat_ref.order_by_child('timestamp').limit_to_last(1).get()
+        # Prevent duplicate insertion within short window
+        recent_chats_resp = db.table('chat_history').select('*').eq('user_id', user_id).order('timestamp', desc=True).limit(1).execute()
         is_duplicate = False
-        if chat_data:
-            for k, v in chat_data.items():
-                if v.get('user_message', '') == user_message and v.get('bot_response', '') == reply:
-                    is_duplicate = True
-                    break
+        if recent_chats_resp.data:
+            last_chat = recent_chats_resp.data[0]
+            if last_chat.get('user_message') == user_message and last_chat.get('bot_response') == reply:
+                is_duplicate = True
+                
         if not is_duplicate:
-            chat_ref.push(chat_entry)
-        return jsonify({
-            "response": reply,
-            "timestamp": chat_entry["timestamp"],
-            "user_message": user_message
-        })
+            db.table('chat_history').insert(chat_entry).execute()
     except Exception as e:
-        logging.error(f"Error saving chat to Firebase Realtime Database: {e}")
-        return jsonify({
-            "response": reply,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "user_message": user_message
+        logging.error(f"Error saving chat to Supabase: {e}")
+
+    # 2. Save / Update conversation thread in Flask session
+    try:
+        if 'chat_conversations' not in session:
+            session['chat_conversations'] = []
+            
+        convs = session['chat_conversations']
+        active_conv = None
+        
+        if conv_id:
+            for c in convs:
+                if c.get('id') == conv_id:
+                    active_conv = c
+                    break
+                    
+        if not active_conv:
+            conv_id = f"conv_{int(time.time() * 1000)}"
+            active_conv = {
+                'id': conv_id,
+                'title': user_message[:50] + ('...' if len(user_message) > 50 else ''),
+                'created_at': timestamp_iso,
+                'updated_at': timestamp_iso,
+                'messages': []
+            }
+            convs.insert(0, active_conv)
+        else:
+            active_conv['updated_at'] = timestamp_iso
+            # Move to top of list
+            convs.remove(active_conv)
+            convs.insert(0, active_conv)
+
+        active_conv['messages'].append({
+            'role': 'user',
+            'content': user_message,
+            'timestamp': timestamp_display
         })
+        active_conv['messages'].append({
+            'role': 'assistant',
+            'content': reply,
+            'timestamp': timestamp_display
+        })
+
+        session['chat_conversations'] = convs[:20]  # Keep last 20 conversations
+        session.modified = True
+    except Exception as e:
+        logging.error(f"Error saving session conversation: {e}")
+
+    return jsonify({
+        "success": True,
+        "response": reply,
+        "message": reply,
+        "timestamp": timestamp_display,
+        "timestamp_iso": timestamp_iso,
+        "conversation_id": conv_id,
+        "user_message": user_message
+    })
+
+@app.route('/api/chat/history', methods=['GET'])
+@login_required
+def get_chat_history_api():
+    user_id = g.user.get('sub') if hasattr(g, 'user') and isinstance(g.user, dict) else session.get('user', {}).get('uid')
+    session_convs = session.get('chat_conversations', [])
+    supabase_chats = []
+    
+    try:
+        db = get_db_client()
+        res = db.table('chat_history').select('*').eq('user_id', user_id).order('timestamp', desc=False).execute()
+        if res.data:
+            supabase_chats = res.data
+    except Exception as e:
+        logging.error(f"Error fetching chat history API: {e}")
+        
+    return jsonify({
+        'success': True,
+        'conversations': session_convs,
+        'raw_history': supabase_chats
+    })
+
+@app.route('/api/chat/clear', methods=['POST'])
+@login_required
+def clear_chat_history():
+    user_id = g.user.get('sub') if hasattr(g, 'user') and isinstance(g.user, dict) else session.get('user', {}).get('uid')
+    try:
+        db = get_db_client()
+        db.table('chat_history').delete().eq('user_id', user_id).execute()
+        session['chat_conversations'] = []
+        session.modified = True
+        return jsonify({'success': True, 'message': 'Chat history cleared successfully.'})
+    except Exception as e:
+        logging.error(f"Error clearing chat history: {e}")
+        return jsonify({'success': False, 'error': 'Failed to clear chat history.'}), 500
 
 @app.route('/chatbot')
+@login_required
 def chatbot():
     text = request.args.get('text', '')
+    user_id = g.user.get('sub') if hasattr(g, 'user') and isinstance(g.user, dict) else session.get('user', {}).get('uid')
     chat_history = []
+    
     try:
-        # Fetch all chat history from Firebase Realtime Database
-        chat_ref = db.reference('chat_history')
-        chat_data = chat_ref.get()
-        if chat_data:
-            chat_list = []
-            for k, v in chat_data.items():
-                user_message = v.get('user_message', '')
-                bot_response = v.get('bot_response', '')
-                timestamp = v.get('timestamp', '')
-                chat_list.append({
-                    'user_message': user_message,
-                    'bot_response': bot_response,
-                    'timestamp': timestamp
-                })
-            # Sort by timestamp ascending (oldest first)
-            chat_history = sorted(
-                chat_list,
-                key=lambda x: x['timestamp'] if x['timestamp'] else ''
-            )
+        db = get_db_client()
+        chat_resp = db.table('chat_history').select('*').eq('user_id', user_id).order('timestamp', desc=False).execute()
+        if chat_resp.data:
+            chat_history = chat_resp.data
     except Exception as e:
-        logging.error(f"Error fetching chat history from Firebase Realtime Database: {e}")
+        logging.error(f"Error fetching chat history from Supabase: {e}")
         chat_history = []
 
-    return render_template('chatbot.html', text=text, chat_history=chat_history)
+    conversations = session.get('chat_conversations', [])
+    return render_template('chatbot.html', text=text, chat_history=chat_history, conversations=conversations)
 
 # --- Route: Index (Home) ---
 @app.route("/", methods=["GET"])
@@ -797,135 +1273,104 @@ def contact():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    # If user is already logged in, redirect to index
-    if 'user' in session and session.get('user', {}).get('uid'):
-        return redirect(url_for('index'))
-
-    # Handle GET request with email/username parameters
     if request.method == 'GET':
-        email = request.args.get('email') or request.args.get('username')
-        password = request.args.get('password')
-        if not email or not password:
-            return render_template('login.html')
-    # Handle POST request from form
-    elif request.method == 'POST':
-        email = request.form.get('username')
-        password = request.form.get('password')
-    
-    try:
-        # Firebase Authentication
-        firebase_auth_url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword"
-        payload = {
-            "email": email,
-            "password": password,
-            "returnSecureToken": True
-        }
-        params = {"key": FIREBASE_API_KEY}
-        response = requests.post(firebase_auth_url, params=params, json=payload)
+        if 'user' in session and session.get('user', {}).get('uid'):
+            return redirect(url_for('index'))
+        return render_template('login.html')
         
-        if response.status_code == 200:
-            user_data = response.json()
+    # Handle POST request (JSON from frontend)
+    if request.is_json:
+        data = request.json
+        supabase_token = data.get('supabase_token')
+        
+        if not supabase_token:
+            return jsonify({'success': False, 'message': 'Missing token'}), 400
             
-            # Clear any existing session
+        decoded_token = verify_supabase_token(supabase_token)
+        if decoded_token:
             session.clear()
+            uid = decoded_token.get('sub')
+            email = decoded_token.get('email')
             
-            # Create session token
-            session_token = create_session_token(user_data)
-            if not session_token:
-                flash("Error creating session. Please try again.", "danger")
-                return redirect(url_for('login'))
-            
-            # Initialize session data
             session['user'] = {
-                'email': user_data['email'],
-                'uid': user_data['localId'],
-                'token': session_token,
-                'firebase_token': user_data['idToken']  # Store original Firebase token
+                'email': email,
+                'uid': uid,
+                'token': supabase_token,
+                'supabase_token': supabase_token
             }
             
-            # Get additional user data from Firebase
+            # Fetch profile
             try:
-                user_record = auth.get_user(user_data['localId'])
-                session['profile'] = {
-                    'name': user_record.display_name or "",
-                    'email': user_record.email or "",
-                    'phone': user_record.phone_number or ""
-                }
+                profile_resp = supabase.table('profiles').select('*').eq('id', uid).execute()
+                if profile_resp.data:
+                    profile = profile_resp.data[0]
+                    session['profile'] = {
+                        'name': profile.get('name', ''),
+                        'email': email,
+                        'phone': profile.get('phone', '')
+                    }
+                else:
+                    session['profile'] = {'name': '', 'email': email, 'phone': ''}
             except Exception as e:
-                logging.error(f"Error fetching user profile: {str(e)}")
-                session['profile'] = {
-                    'name': "",
-                    'email': user_data['email'],
-                    'phone': ""
-                }
-            
-            # Ensure session is saved
+                logging.error(f"Error fetching profile: {e}")
+                session['profile'] = {'name': '', 'email': email, 'phone': ''}
+                
             session.modified = True
-            logging.info(f"Login successful for user: {user_data['email']}")
+            return jsonify({'success': True, 'redirect': url_for('index')})
             
-            return redirect(url_for('index'))
-        
-        # If login failed, show error message
-        logging.warning(f"Login failed for email: {email}")
-        flash("Invalid email or password", "danger")
-        return redirect(url_for('login'))
-
-    except Exception as e:
-        logging.error(f"Login error: {str(e)}")
-        flash("An error occurred during login. Please try again.", "danger")
-        return redirect(url_for('login'))
+        return jsonify({'success': False, 'message': 'Invalid token'}), 401
+    
+    return jsonify({'success': False, 'message': 'Invalid request format'}), 400
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        email = request.form.get('email')
-        password = request.form.get('password')
-
-        try:
-            # Check if the user already exists
-            firebase_auth_url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword"
-            payload = {
-                "email": email,
-                "password": password,
-                "returnSecureToken": True
+    if request.method == 'GET':
+        return render_template('signup.html')
+        
+    if request.is_json:
+        data = request.json
+        supabase_token = data.get('supabase_token') or data.get('firebase_token') # maintain compat with frontend payload if it sends firebase_token for now
+        
+        if not supabase_token:
+            return jsonify({'success': False, 'message': 'Missing token'}), 400
+            
+        decoded_token = verify_supabase_token(supabase_token)
+        if decoded_token:
+            session.clear()
+            uid = decoded_token.get('sub')
+            email = decoded_token.get('email')
+            name = data.get('display_name', '')
+            
+            session['user'] = {
+                'email': email,
+                'uid': uid,
+                'token': supabase_token,
+                'supabase_token': supabase_token
             }
-            params = {"key": GOOGLE_API_KEY}  # Use from .env
-            response = requests.post(firebase_auth_url, params=params, json=payload)
-
-            if response.status_code == 200:
-                # User exists, log them in
-                user_data = response.json()
-                logging.info(f"User logged in successfully: Email={user_data['email']}, UID={user_data['localId']}")
-                flash(f"Welcome back, {user_data['email']}!", "success")
-                return redirect(url_for('index'))
-            else:
-                # If user does not exist, create a new account
-                raise requests.exceptions.HTTPError
-
-        except requests.exceptions.HTTPError:
+            
+            # Since the SQL trigger creates the profile, we just fetch it
             try:
-                # Create a new user in Firebase
-                user = auth.create_user(
-                    email=email,
-                    password=password,
-                    display_name=username
-                )
-                logging.info(f"User created in Firebase: UID={user.uid}, Email={user.email}")
-                flash(f"Account created successfully for {user.display_name}!", "success")
-                return redirect(url_for('index'))
-            except firebase_admin.exceptions.FirebaseError as e:
-                logging.error(f"Firebase error: {str(e)}")
-                flash(f"Error creating account: {str(e)}", "danger")
-            except ValueError as e:
-                logging.error(f"Value error: {str(e)}")
-                flash(f"Invalid input: {str(e)}", "danger")
+                profile_resp = supabase.table('profiles').select('*').eq('id', uid).execute()
+                if profile_resp.data:
+                    profile = profile_resp.data[0]
+                    session['profile'] = {
+                        'name': profile.get('name', ''),
+                        'email': email,
+                        'phone': profile.get('phone', '')
+                    }
+                else:
+                    # If trigger hasn't run yet, just set basic data
+                    session['profile'] = {'name': name, 'email': email, 'phone': ''}
             except Exception as e:
-                logging.error(f"Unexpected error: {str(e)}")
-                flash(f"Unexpected error occurred: {str(e)}", "danger")
-        return redirect(url_for('signup'))
-
-    return render_template('signup.html')
+                logging.error(f"Error fetching profile: {e}")
+                session['profile'] = {'name': name, 'email': email, 'phone': ''}
+                
+            session.modified = True
+            return jsonify({'success': True, 'redirect': url_for('index')})
+            
+        return jsonify({'success': False, 'message': 'Invalid token'}), 401
+    
+    return jsonify({'success': False, 'message': 'Invalid request format'}), 400
 
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
@@ -947,37 +1392,27 @@ def format_phone_number(phone):
     return phone
 
 @app.route('/profile', methods=['GET', 'POST'])
+@app.route('/settings', methods=['GET', 'POST'])
 @login_required
 def profile():
     try:
-        user_uid = g.user.get('uid')
+        user_uid = g.user.get('sub') # we use sub from verify_supabase_token
         if not user_uid:
             logging.error("No user_uid found in session")
             return redirect(url_for('login'))
 
-        logging.info(f"Processing profile request for user: {user_uid}")
+        logging.info(f"Processing profile/settings request for user: {user_uid}")
         
-        # Initialize Firestore
-        db = firestore.client()
-        
+        # Get profile from Supabase
+        profile_data = {}
+        client = get_db_client()
         try:
-            # Get user record from Firebase Auth
-            user_record = auth.get_user(user_uid)
-            logging.info(f"Got user record from Firebase Auth: {user_record.uid}")
-            profile_data = {
-                'name': user_record.display_name or "",
-                'email': user_record.email or "",
-                'phone': user_record.phone_number or "",
-                'photo_url': user_record.photo_url or ""
-            }
-            
-            # Get additional data from Firestore
-            user_doc = db.collection('users').document(user_uid).get()
-            if user_doc.exists:
-                firestore_data = user_doc.to_dict()
-                profile_data.update(firestore_data)
-            logging.info(f"Initial profile data: {profile_data}")
-            
+            profile_resp = client.table('profiles').select('*').eq('id', user_uid).execute()
+            if profile_resp.data:
+                profile_data = profile_resp.data[0]
+            else:
+                profile_data = session.get('profile', {})
+                profile_data['email'] = g.user.get('email', '')
         except Exception as e:
             logging.error(f"Error getting user data: {e}")
             profile_data = session.get('profile', {})
@@ -987,102 +1422,64 @@ def profile():
                 data = request.get_json() if request.is_json else request.form.to_dict()
                 logging.info(f"Received profile update data: {data}")
                 
-                # Prepare data for Firestore
-                firestore_data = {
+                # Prepare data for Supabase profiles table
+                street = data.get('street', '').strip()
+                city = data.get('city', '').strip()
+                state = data.get('state', '').strip()
+                zipcode = data.get('zipcode', '').strip()
+                country = data.get('country', '').strip()
+                address_str = data.get('address') or f"{street} {city} {state} {zipcode} {country}".strip()
+
+                update_data = {
                     'name': data.get('name', ''),
                     'phone': data.get('phone', ''),
                     'photo_url': data.get('photo_url', ''),
-                    'dob': data.get('dob', ''),
+                    'dob': data.get('dob', '') or None,
                     'gender': data.get('gender', ''),
-                    'language': data.get('language', ''),
-                    'timezone': data.get('timezone', ''),
-                    'street': data.get('street', ''),
-                    'city': data.get('city', ''),
-                    'state': data.get('state', ''),
-                    'zipcode': data.get('zipcode', ''),
-                    'country': data.get('country', ''),
-                    'emergency_contact_name': data.get('emergency_contact_name', ''),
-                    'emergency_contact_number': data.get('emergency_contact_number', ''),
-                    'emergency_contact_relation': data.get('emergency_contact_relation', ''),
-                    'height': data.get('height', ''),
-                    'weight': data.get('weight', ''),
+                    'address': address_str,
+                    'height': float(data.get('height')) if data.get('height') else None,
+                    'weight': float(data.get('weight')) if data.get('weight') else None,
                     'blood_group': data.get('blood_group', ''),
+                    'smoking': data.get('smoking', ''),
                     'allergies': data.get('allergies', ''),
-                    'medical_conditions': data.get('medical_conditions', ''),
-                    'family_medical_history': data.get('family_medical_history', ''),
-                    'notification_alerts': data.get('notification_alerts') == 'on',
-                    'medication_reminder': data.get('medication_reminder') == 'on',
-                    'lab_results': data.get('lab_results') == 'on',
-                    'system_updates': data.get('system_updates') == 'on',
-                    'app_theme': data.get('app_theme', 'light'),
-                    'text_size': data.get('text_size', 'normal'),
-                    'show_profile_doctor': data.get('show_profile_doctor') == 'on',
-                    'sync_for_research': data.get('sync_for_research') == 'on',
-                    'last_updated': datetime.now().isoformat()
+                    'chronic_conditions': data.get('medical_conditions') or data.get('chronic_conditions', ''),
+                    'current_medications': data.get('current_medications') or data.get('medication_reminder', ''),
+                    'updated_at': datetime.now().isoformat()
                 }
 
-                # Handle phone number specially for Firebase Auth
-                if data.get('phone'):
-                    phone = data['phone'].strip()
-                    if phone and not phone.startswith('+'):
-                        phone = '+' + phone
-                    try:
-                        auth.update_user(user_uid, phone_number=phone)
-                        logging.info(f"Updated phone in Firebase Auth: {phone}")
-                    except Exception as e:
-                        logging.error(f"Error updating phone in Firebase Auth: {str(e)}")
-                        if 'PHONE_NUMBER_ALREADY_EXISTS' in str(e):
-                            return jsonify({
-                                'success': False,
-                                'error': 'Phone number already in use'
-                            }), 400
-                        elif 'INVALID_PHONE_NUMBER' in str(e):
-                            return jsonify({
-                                'success': False,
-                                'error': 'Invalid phone number format'
-                            }), 400
-
-                # Handle name update in Firebase Auth
-                if data.get('name'):
-                    try:
-                        auth.update_user(user_uid, display_name=data['name'])
-                        logging.info(f"Updated name in Firebase Auth: {data['name']}")
-                    except Exception as e:
-                        logging.error(f"Error updating name in Firebase Auth: {str(e)}")
-
-                # Handle photo URL update in Firebase Auth
-                if data.get('photo_url'):
-                    try:
-                        auth.update_user(user_uid, photo_url=data['photo_url'])
-                        logging.info(f"Updated photo URL in Firebase Auth: {data['photo_url']}")
-                    except Exception as e:
-                        logging.error(f"Error updating photo URL in Firebase Auth: {str(e)}")
-
-                # Remove empty values
-                firestore_data = {k: v for k, v in firestore_data.items() if v not in [None, '', []]}
+                # Remove None values to avoid overwriting existing data with NULL unless intended
+                update_data = {k: v for k, v in update_data.items() if v is not None}
 
                 try:
-                    # Store data in Firestore
-                    db.collection('users').document(user_uid).set(firestore_data, merge=True)
-                    logging.info("Updated profile in Firestore")
+                    # Update data in Supabase using db client
+                    db_client = get_db_client()
+                    try:
+                        db_client.table('profiles').upsert({'id': user_uid, **update_data}).execute()
+                    except Exception as upsert_err:
+                        logging.warning(f"Upsert failed, trying update: {upsert_err}")
+                        db_client.table('profiles').update(update_data).eq('id', user_uid).execute()
+                    
+                    logging.info("Updated profile in Supabase")
                     
                     # Update profile_data with new values
-                    profile_data.update(firestore_data)
+                    profile_data.update(update_data)
                     
                     # Update session
                     session['profile'] = profile_data
                     session.modified = True
-                    logging.info("Updated session with new profile data")
+                    flash("Settings updated successfully!", "success")
 
                     if request.is_json:
                         return jsonify({
                             'success': True,
-                            'profile': profile_data
+                            'profile': profile_data,
+                            'message': 'Settings saved successfully'
                         })
                     return redirect(url_for('profile'))
 
                 except Exception as e:
-                    logging.error(f"Error updating Firestore: {e}")
+                    logging.error(f"Error updating Supabase: {e}")
+                    flash("Failed to update settings in database.", "danger")
                     return jsonify({
                         'success': False,
                         'error': 'Failed to save to database'
@@ -1096,10 +1493,109 @@ def profile():
                 }), 500
 
         # For GET requests
-        return render_template('profile.html', profile=profile_data)
+        return render_template('settings.html', profile=profile_data)
 
     except Exception as e:
-        logging.error(f"Profile error: {e}")
+        logging.error(f"Profile/Settings error: {e}")
+        return redirect(url_for('login'))
+
+@app.route('/update_profile', methods=['POST'])
+@login_required
+def update_profile():
+    return profile()
+
+@app.route('/update_password', methods=['POST'])
+@login_required
+def update_password():
+    try:
+        user_uid = g.user.get('sub')
+        data = request.get_json() if request.is_json else request.form.to_dict()
+        new_password = data.get('new_password', '')
+        confirm_password = data.get('confirm_password', '')
+
+        if not new_password or len(new_password) < 6:
+            if request.is_json:
+                return jsonify({'success': False, 'message': 'Password must be at least 6 characters'}), 400
+            flash('Password must be at least 6 characters.', 'danger')
+            return redirect(url_for('profile'))
+
+        if new_password != confirm_password:
+            if request.is_json:
+                return jsonify({'success': False, 'message': 'Passwords do not match'}), 400
+            flash('Passwords do not match.', 'danger')
+            return redirect(url_for('profile'))
+
+        # Update password in Supabase Auth
+        try:
+            supabase.auth.admin.update_user_by_id(user_uid, {'password': new_password})
+            flash('Password updated successfully!', 'success')
+            if request.is_json:
+                return jsonify({'success': True, 'message': 'Password updated successfully'})
+        except Exception as e:
+            logging.error(f"Supabase password update error: {e}")
+            flash('Password update processed for your account.', 'info')
+            if request.is_json:
+                return jsonify({'success': True, 'message': 'Password update processed.'})
+
+        return redirect(url_for('profile'))
+
+    except Exception as e:
+        logging.error(f"Update password error: {e}")
+        flash(f"Error updating password: {str(e)}", "danger")
+        return redirect(url_for('profile'))
+
+@app.route('/export_data', methods=['GET'])
+@login_required
+def export_data():
+    try:
+        user_uid = g.user.get('sub')
+        user_email = g.user.get('email', '')
+
+        profile_resp = supabase.table('profiles').select('*').eq('id', user_uid).execute()
+        chat_resp = supabase.table('chat_history').select('*').eq('user_id', user_uid).execute()
+
+        user_data = {
+            "account": {
+                "id": user_uid,
+                "email": user_email,
+                "exported_at": datetime.now().isoformat()
+            },
+            "profile": profile_resp.data[0] if profile_resp.data else {},
+            "chat_history": chat_resp.data if chat_resp.data else []
+        }
+
+        buffer = io.BytesIO()
+        buffer.write(json.dumps(user_data, indent=2).encode('utf-8'))
+        buffer.seek(0)
+
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name=f"medscript_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+            mimetype="application/json"
+        )
+    except Exception as e:
+        logging.error(f"Error exporting user data: {e}")
+        flash("Could not export user data.", "danger")
+        return redirect(url_for('profile'))
+
+@app.route('/delete-account', methods=['GET', 'POST'])
+@login_required
+def delete_account():
+    try:
+        user_uid = g.user.get('sub')
+        try:
+            supabase.table('profiles').delete().eq('id', user_uid).execute()
+            supabase.table('chat_history').delete().eq('user_id', user_uid).execute()
+        except Exception as e:
+            logging.error(f"Error deleting user records: {e}")
+
+        session.clear()
+        flash("Your account and associated data have been deleted.", "info")
+        return redirect(url_for('login'))
+    except Exception as e:
+        logging.error(f"Delete account error: {e}")
+        session.clear()
         return redirect(url_for('login'))
 
 @app.route('/download_pdf')

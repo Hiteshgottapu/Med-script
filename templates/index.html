@@ -1,973 +1,363 @@
-{% extends "base.html" %}
-
-{% block title %}MedScript - Home{% endblock %}
+﻿{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
 
 {% block extra_css %}
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<!-- ApexCharts -->
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<style>
+.dashboard-header { padding: 32px 32px 0; }
+.dashboard-greeting { font-size: 24px; font-weight: 700; color: var(--text-primary); }
+.dashboard-date { font-size: 14px; color: var(--text-muted); margin-top: 2px; }
+.dashboard-body { padding: 24px 32px 32px; display: flex; flex-direction: column; gap: 24px; }
+
+/* Stats row */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+/* Services grid */
+.services-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+.service-card {
+    background: var(--surface-0);
+    border: var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: box-shadow var(--transition), border-color var(--transition), transform var(--transition-fast);
+    text-decoration: none;
+    cursor: pointer;
+}
+.service-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--accent-border);
+    transform: translateY(-1px);
+}
+.service-icon {
+    width: 40px; height: 40px;
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+}
+.service-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.service-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+.service-arrow { font-size: 12px; color: var(--text-disabled); margin-top: auto; }
+
+/* Bottom section */
+.dashboard-lower { display: grid; grid-template-columns: 1fr 380px; gap: 24px; }
+
+/* Activity feed */
+.activity-feed { display: flex; flex-direction: column; gap: 0; }
+.activity-item { display: flex; align-items: flex-start; gap: 14px; padding: 14px 0; border-bottom: var(--border); }
+.activity-item:last-child { border-bottom: none; }
+.activity-icon-wrap { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+.activity-text { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+.activity-text strong { color: var(--text-primary); font-weight: 600; }
+.activity-time { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+/* Quick actions */
+.quick-actions-grid { display: flex; flex-direction: column; gap: 8px; }
+.quick-action-btn {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface-0);
+    border: var(--border);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
+    cursor: pointer;
+}
+.quick-action-btn:hover {
+    background: var(--accent-light);
+    border-color: var(--accent-border);
+}
+.quick-action-icon {
+    width: 32px; height: 32px;
+    background: var(--accent-light);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    color: var(--accent);
+    flex-shrink: 0;
+}
+.quick-action-label { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+.quick-action-desc { font-size: 12px; color: var(--text-muted); }
+.quick-action-arrow { margin-left: auto; color: var(--text-disabled); font-size: 12px; }
+
+/* Page section header */
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.section-title { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+
+@media (max-width: 1100px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .services-grid { grid-template-columns: repeat(2, 1fr); }
+    .dashboard-lower { grid-template-columns: 1fr; }
+    .dashboard-header, .dashboard-body { padding-left: 20px; padding-right: 20px; }
+}
+@media (max-width: 600px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .services-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="dashboard-container">
-    <!-- Enhanced Greeting Section -->
-    <div class="greeting-section">
-        <div class="greeting-content">
-            <div class="greeting-left">
-                <div class="greeting-avatar">
-                    <img src="{{ session.get('profile', {}).get('photo_url', 'https://ui-avatars.com/api/?name=' + session.get('profile', {}).get('name', 'Guest')) }}" alt="Profile">
-                    <span class="status-dot"></span>
-                </div>
-                <div class="greeting-text">
-                    <h2>Hi, {{ session.get('profile', {}).get('name', 'Guest').split()[0] }}! 👋</h2>
-                    <p>How are you feeling today?</p>
-                </div>
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+        <div>
+            <div class="dashboard-greeting">
+                {% if session.get('profile', {}).get('name') %}
+                    Good day, {{ session.get('profile', {}).get('name').split()[0] }} 👋
+                {% elif session.get('user') %}
+                    Good day, {{ session.get('user', {}).get('email', '').split('@')[0] }} 👋
+                {% else %}
+                    Welcome to MedScript 👋
+                {% endif %}
             </div>
-            <div class="greeting-right">
-                <div class="greeting-stat">
-                    <i class="fas fa-calendar"></i>
-                    <div class="stat-text">
-                        <span id="currentDate"></span>
-                        <small id="currentTime"></small>
-                    </div>
-                </div>
-                <div class="greeting-stat">
-                    <i class="fas fa-heartbeat"></i>
-                    <div class="stat-text">
-                        <span>Health Score</span>
-                        <small class="health-score">82/100</small>
-                    </div>
-                </div>
-            </div>
+            <div class="dashboard-date" id="dashDate">Loading...</div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <a href="{{ url_for('medscript') }}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-upload"></i> Upload Prescription
+            </a>
+            <a href="{{ url_for('ai_consultant') }}" class="btn btn-primary btn-sm">
+                <i class="fas fa-stethoscope"></i> Start Consultation
+            </a>
         </div>
     </div>
-
-    <!-- Health Metrics Grid -->
-    <div class="metrics-section">
-        <!-- Charts Row -->
-        <div class="metrics-grid">
-            <!-- Weekly Activity -->
-            <div class="metric-card">
-                <div class="metric-header">
-                    <h3>Weekly Activity</h3>
-                    <a href="#" class="view-details">View Details <i class="fas fa-chevron-right"></i></a>
-                </div>
-                <div class="activity-chart-container">
-                    <div id="weeklyActivityChart"></div>
-                </div>
-            </div>
-
-            <!-- Monthly Appointments -->
-            <div class="metric-card">
-                <div class="metric-header">
-                    <h3>Monthly Check-ups</h3>
-                    <button class="schedule-btn" data-href="{{ url_for('doctor_consultation') }}">
-                        Schedule New
-                    </button>
-                </div>
-                <div id="appointmentsChart"></div>
-            </div>
-        </div>
-
-        <!-- Stats Row -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-shoe-prints"></i>
-                </div>
-                <div class="stat-content">
-                    <h4>Average Steps</h4>
-                    <div class="stat-value">7,100</div>
-                    <div class="stat-trend positive">
-                        <i class="fas fa-arrow-up"></i>
-                        <span>12% vs last week</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-file-medical"></i>
-                </div>
-                <div class="stat-content">
-                    <h4>Prescriptions Analyzed</h4>
-                    <div class="stat-value">5</div>
-                    <div class="stat-trend">
-                        <span>Active prescriptions</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-heartbeat"></i>
-                </div>
-                <div class="stat-content">
-                    <h4>Health Checks</h4>
-                    <div class="stat-value">3</div>
-                    <div class="stat-trend">
-                        <span>This month</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    
-    <!-- Core Services Section -->
-    <div class="sections-container" style="max-width: 1200px; margin: 4rem auto; padding: 0 2rem;">
-        <div style="text-align: center; margin-bottom: 3rem;">
-            <h2 style="font-size: 2.5rem; font-weight: 800; background: linear-gradient(135deg, #4098d7, #7f53ac); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Our Services</h2>
-            <p style="color: #666; font-size: 1.2rem; max-width: 600px; margin: 1rem auto;">Comprehensive healthcare solutions designed to make your life easier</p>
-        </div>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
-            <!-- Symptom Checker -->
-            <div class="feature-card" style="background: white; border-radius: 20px; padding: 2rem; transition: all 0.3s ease; border: 1px solid rgba(64,152,215,0.1);">
-                <div style="text-align: center; margin-bottom: 1.5rem;">
-                    <div style="background: #e3f2fd; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
-                        <i class="fas fa-stethoscope" style="font-size: 2rem; color: #4098d7;"></i>
-                    </div>
-                </div>
-                <h3 style="font-size: 1.5rem; color: #4098d7; margin-bottom: 1rem; text-align: center;">Symptom Checker</h3>
-                <p style="color: #666; text-align: center; margin-bottom: 1.5rem;">Enter your symptoms and let our AI Consultant predict possible diseases and provide health recommendations.</p>
-                <div style="text-align: center;">
-                    <a href="{{ url_for('ai_consultant') }}" class="feature-btn" style="display: inline-flex; align-items: center; gap: 0.5rem; background: #4098d7; color: white; padding: 0.8rem 1.5rem; border-radius: 10px; text-decoration: none; font-weight: 600; transition: all 0.3s ease;">
-                        <i class="fas fa-search"></i> Try Now
-                    </a>
-                </div>
-            </div>
-
-            <!-- Emergency Alert -->
-            <div class="feature-card" style="background: white; border-radius: 20px; padding: 2rem; transition: all 0.3s ease; border: 1px solid rgba(255,32,82,0.1);">
-                <div style="text-align: center; margin-bottom: 1.5rem;">
-                    <div style="background: #ffe6eb; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
-                        <i class="fas fa-ambulance" style="font-size: 2rem; color: #FF2052;"></i>
-                    </div>
-                </div>
-                <h3 style="font-size: 1.5rem; color: #FF2052; margin-bottom: 1rem; text-align: center;">Emergency Alert</h3>
-                <p style="color: #666; text-align: center; margin-bottom: 1.5rem;">Instant access to emergency services and quick response system for critical situations.</p>
-                <div style="text-align: center;">
-                    <a href="{{ url_for('emergency') }}" class="feature-btn" style="display: inline-flex; align-items: center; gap: 0.5rem; background: #FF2052; color: white; padding: 0.8rem 1.5rem; border-radius: 10px; text-decoration: none; font-weight: 600; transition: all 0.3s ease;">
-                        <i class="fas fa-bolt"></i> Emergency Help
-                    </a>
-                </div>
-            </div>
-
-            <!-- Medicine Search -->
-            <div class="feature-card" style="background: white; border-radius: 20px; padding: 2rem; transition: all 0.3s ease; border: 1px solid rgba(40,167,69,0.1);">
-                <div style="text-align: center; margin-bottom: 1.5rem;">
-                    <div style="background: #e8f5e9; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
-                        <i class="fas fa-pills" style="font-size: 2rem; color: #28a745;"></i>
-                    </div>
-                </div>
-                <h3 style="font-size: 1.5rem; color: #28a745; margin-bottom: 1rem; text-align: center;">Medicine Search</h3>
-                <p style="color: #666; text-align: center; margin-bottom: 1.5rem;">Compare medicine prices across pharmacies and find the best deals for your prescriptions.</p>
-                <div style="text-align: center;">
-                    <a href="{{ url_for('medicine_search') }}" class="feature-btn" style="display: inline-flex; align-items: center; gap: 0.5rem; background: #28a745; color: white; padding: 0.8rem 1.5rem; border-radius: 10px; text-decoration: none; font-weight: 600; transition: all 0.3s ease;">
-                        <i class="fas fa-search-dollar"></i> Search Medicines
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Actions Section -->
-    <div class="section-header">
-        <h2>Quick Actions</h2>
-        <p>Manage your health journey efficiently</p>
-    </div>
-    <div class="quick-actions-grid">
-        <div class="action-card" data-href="{{ url_for('doctor_consultation') }}">
-            <i class="fas fa-calendar-plus"></i>
-            <h3>Book Appointment</h3>
-            <p>Schedule your next check-up</p>
-        </div>
-        <div class="action-card">
-            <i class="fas fa-prescription-bottle-alt"></i>
-            <h3>Manage Medications</h3>
-            <p>Track your prescriptions</p>
-        </div>
-        <div class="action-card">
-            <i class="fas fa-notes-medical"></i>
-            <h3>Track Symptoms</h3>
-            <p>Monitor your health</p>
-        </div>
-        <div class="action-card">
-            <i class="fas fa-file-medical-alt"></i>
-            <h3>Health Report</h3>
-            <p>View your progress</p>
-        </div>
-    </div>
-
-    <!-- Impact Section -->
-    <div class="section-header">
-        <h2>Our Impact</h2>
-        <p>Making healthcare accessible and reliable</p>
-    </div>
-    <div class="impact-grid">
-        <div class="impact-card">
-            <div class="impact-number">98%</div>
-            <h3>Accuracy Rate</h3>
-            <p>In symptom analysis and recommendations</p>
-        </div>
-        <div class="impact-card">
-            <div class="impact-number">24/7</div>
-            <h3>Support Available</h3>
-            <p>Round-the-clock medical assistance</p>
-        </div>
-        <div class="impact-card">
-            <div class="impact-number">50K+</div>
-            <h3>Users Helped</h3>
-            <p>Growing community of healthy users</p>
-        </div>
-    </div>
-
-    <!-- Health Alerts -->
-    {% if health_alerts %}
-    <div class="health-alerts">
-        {% for alert in health_alerts %}
-        <div class="alert-card {{ alert.severity }}">
-            <div class="alert-icon">
-                <i class="fas fa-exclamation-circle"></i>
-            </div>
-            <div class="alert-content">
-                <h4>Health Alert</h4>
-                <p>{{ alert.message }}</p>
-                <a href="{{ url_for('doctor_consultation') }}" class="schedule-appointment-btn">
-                    Schedule Appointment
-                    <i class="fas fa-arrow-right"></i>
-                </a>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
 </div>
 
-
-<style>
-.dashboard-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
-}
-
-.greeting-section {
-    background: linear-gradient(135deg, #4098d7 0%, #7f53ac 100%);
-    border-radius: 24px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    position: relative;
-    overflow: hidden;
-}
-
-.greeting-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 300px;
-    height: 300px;
-    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
-    border-radius: 50%;
-    transform: translate(50%, -50%);
-}
-
-.greeting-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 2rem;
-}
-
-.greeting-left {
-    display: flex;
-    align-items: center;
-    gap: 1.25rem;
-}
-
-.greeting-avatar {
-    position: relative;
-}
-
-.greeting-avatar img {
-    width: 60px;
-    height: 60px;
-    border-radius: 20px;
-    object-fit: cover;
-    border: 3px solid rgba(255, 255, 255, 0.2);
-}
-
-.status-dot {
-    position: absolute;
-    bottom: -2px;
-    right: -2px;
-    width: 14px;
-    height: 14px;
-    background-color: #4CAF50;
-    border-radius: 50%;
-    border: 2px solid white;
-}
-
-.greeting-text h2 {
-    color: white;
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.greeting-text p {
-    color: rgba(255, 255, 255, 0.9);
-    margin: 0.25rem 0 0;
-    font-size: 0.95rem;
-}
-
-.greeting-right {
-    display: flex;
-    gap: 1.5rem;
-}
-
-.greeting-stat {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 0.75rem 1rem;
-    border-radius: 16px;
-    backdrop-filter: blur(10px);
-    transition: transform 0.2s ease;
-}
-
-.greeting-stat:hover {
-    transform: translateY(-2px);
-}
-
-.greeting-stat i {
-    color: white;
-    font-size: 1.25rem;
-}
-
-.stat-text {
-    display: flex;
-    flex-direction: column;
-}
-
-.stat-text span {
-    color: white;
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-.stat-text small {
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 0.8rem;
-}
-
-.health-score {
-    color: #4CAF50 !important;
-    font-weight: 600;
-}
-
-.metrics-section {
-    margin-bottom: 3rem;
-}
-
-.metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
-    margin-bottom: 1.5rem;
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-}
-
-.stat-card {
-    background: white;
-    border-radius: 15px;
-    padding: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    transition: transform 0.3s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-5px);
-}
-
-.stat-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
-    background: rgba(68, 187, 164, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.stat-icon i {
-    font-size: 1.5rem;
-    color: var(--accent-color);
-}
-
-.stat-content {
-    flex: 1;
-}
-
-.stat-content h4 {
-    font-size: 0.9rem;
-    color: var(--light-text);
-    margin: 0 0 0.5rem 0;
-}
-
-.stat-value {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text-color);
-    margin-bottom: 0.25rem;
-}
-
-.stat-trend {
-    font-size: 0.85rem;
-    color: var(--light-text);
-}
-
-.stat-trend.positive {
-    color: #44BBA4;
-}
-
-.stat-trend.positive i {
-    margin-right: 0.25rem;
-}
-
-.section-header {
-    text-align: center;
-    margin: 3rem 0 2rem;
-}
-
-.section-header h2 {
-    font-size: 2rem;
-    color: var(--text-color);
-    margin-bottom: 0.5rem;
-}
-
-.section-header p {
-    color: var(--light-text);
-    font-size: 1.1rem;
-}
-
-.services-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-}
-
-.service-card {
-    cursor: pointer;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    height: 100%;
-    width: 100%;
-}
-
-.service-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-}
-
-.service-icon {
-    width: 80px;
-    height: 80px;
-    background: rgba(68, 187, 164, 0.1);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1.5rem;
-}
-
-.service-icon i {
-    font-size: 2rem;
-    color: var(--accent-color);
-}
-
-.service-card h3 {
-    font-size: 1.3rem;
-    margin-bottom: 1rem;
-    color: var(--text-color);
-}
-
-.service-card p {
-    color: var(--light-text);
-    margin-bottom: 1.5rem;
-    line-height: 1.6;
-}
-
-.service-action {
-    color: var(--accent-color);
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-}
-
-.quick-actions-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-}
-
-.action-card {
-    background: white;
-    border-radius: 20px;
-    padding: 1.5rem;
-    text-align: center;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    height: 100%;
-    width: 100%;
-}
-
-.action-card:hover {
-    transform: translateY(-5px);
-}
-
-.action-card i {
-    font-size: 2rem;
-    color: var(--accent-color);
-    margin-bottom: 1rem;
-}
-
-.action-card h3 {
-    font-size: 1.1rem;
-    margin-bottom: 0.5rem;
-    color: var(--text-color);
-}
-
-.action-card p {
-    color: var(--light-text);
-    font-size: 0.9rem;
-}
-
-.impact-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-}
-
-.impact-card {
-    background: white;
-    border-radius: 20px;
-    padding: 2rem;
-    text-align: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-}
-
-.impact-number {
-    font-size: 3rem;
-    font-weight: 700;
-    color: var(--accent-color);
-    margin-bottom: 1rem;
-    background: linear-gradient(135deg, var(--accent-color) 0%, #2c7a6d 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.impact-card h3 {
-    font-size: 1.2rem;
-    margin-bottom: 0.5rem;
-    color: var(--text-color);
-}
-
-.impact-card p {
-    color: var(--light-text);
-}
-
-@media (max-width: 1024px) {
-    .metrics-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .quick-actions-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 768px) {
-    .greeting-content {
-        flex-direction: column;
-        text-align: center;
-        gap: 1.5rem;
-    }
-
-    .greeting-left {
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .greeting-right {
-        width: 100%;
-        justify-content: center;
-    }
-
-    .greeting-stat {
-        flex: 1;
-        justify-content: center;
-    }
-
-    .metrics-grid,
-    .stats-grid,
-    .quick-actions-grid,
-    .impact-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-.metric-card {
-    background: white;
-    border-radius: 20px;
-    padding: 2rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.metric-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-}
-
-.metric-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-}
-
-.metric-header h3 {
-    font-size: 1.2rem;
-    color: var(--text-color);
-    margin: 0;
-}
-
-.view-details {
-    color: var(--accent-color);
-    text-decoration: none;
-    font-size: 0.9rem;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: color 0.2s ease;
-}
-
-.view-details:hover {
-    color: #2c7a6d;
-}
-
-.schedule-btn {
-    background: var(--accent-color);
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 12px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.schedule-btn:hover {
-    background: #2c7a6d;
-}
-
-.activity-chart-container, #appointmentsChart {
-    height: 300px;
-    width: 100%;
-}
-
-/* Enhanced Footer Styles */
-.site-footer {
-    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-    color: #fff;
-    padding: 4rem 2rem 1rem;
-    margin-top: 4rem;
-    position: relative;
-}
-
-.site-footer::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, #4098d7, #7f53ac);
-}
-
-.footer-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 2rem;
-    margin-bottom: 3rem;
-}
-
-.footer-section h4 {
-    color: #fff;
-    font-size: 1.2rem;
-    margin-bottom: 1.5rem;
-    position: relative;
-    padding-bottom: 0.5rem;
-}
-
-.footer-section h4::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    width: 40px;
-    height: 2px;
-    background: var(--accent-color);
-}
-
-.footer-section p {
-    color: #b3b3b3;
-    line-height: 1.6;
-    margin-bottom: 1.5rem;
-}
-
-.footer-section ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.footer-section ul li {
-    margin-bottom: 0.75rem;
-}
-
-.footer-section ul li a {
-    color: #b3b3b3;
-    text-decoration: none;
-    transition: color 0.3s ease;
-    display: inline-block;
-}
-
-.footer-section ul li a:hover {
-    color: var(--accent-color);
-    transform: translateX(5px);
-}
-
-.social-links {
-    display: flex;
-    gap: 1rem;
-}
-
-.social-links a {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    text-decoration: none;
-    transition: all 0.3s ease;
-}
-
-.social-links a:hover {
-    background: var(--accent-color);
-    transform: translateY(-3px);
-}
-
-.contact-info li {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    color: #b3b3b3;
-}
-
-.contact-info li i {
-    color: var(--accent-color);
-    width: 20px;
-}
-
-.footer-bottom {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding-top: 2rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: #b3b3b3;
-}
-
-.footer-bottom-links {
-    display: flex;
-    gap: 2rem;
-}
-
-.footer-bottom-links a {
-    color: #b3b3b3;
-    text-decoration: none;
-    transition: color 0.3s ease;
-}
-
-.footer-bottom-links a:hover {
-    color: var(--accent-color);
-}
-
-@media (max-width: 1024px) {
-    .footer-content {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 768px) {
-    .footer-content {
-        grid-template-columns: 1fr;
-    }
-
-    .footer-bottom {
-        flex-direction: column;
-        text-align: center;
-        gap: 1rem;
-    }
-
-    .footer-bottom-links {
-        justify-content: center;
-    }
-}
-</style>
-
+<div class="dashboard-body">
+
+    <!-- Stats Row -->
+    <div class="stats-row">
+        <div class="stat-card accent">
+            <div class="stat-label">Prescriptions Analyzed</div>
+            <div class="stat-value">12</div>
+            <div class="stat-delta up"><i class="fas fa-arrow-up"></i> 3 this week</div>
+        </div>
+        <div class="stat-card success">
+            <div class="stat-label">Consultations</div>
+            <div class="stat-value">5</div>
+            <div class="stat-delta neutral"><i class="fas fa-minus"></i> This month</div>
+        </div>
+        <div class="stat-card warning">
+            <div class="stat-label">Health Checks</div>
+            <div class="stat-value">3</div>
+            <div class="stat-delta up"><i class="fas fa-arrow-up"></i> 1 today</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Emergency Alerts</div>
+            <div class="stat-value">0</div>
+            <div class="stat-delta neutral" style="color: var(--success);"><i class="fas fa-check-circle"></i> All clear</div>
+        </div>
+    </div>
+
+    <!-- Services -->
+    <div>
+        <div class="section-header">
+            <span class="section-title">Clinical Tools</span>
+        </div>
+        <div class="services-grid">
+            <a href="{{ url_for('medscript') }}" class="service-card">
+                <div class="service-icon" style="background: #EFF6FF; color: #1B6CA8;">
+                    <i class="fas fa-file-prescription"></i>
+                </div>
+                <div>
+                    <div class="service-title">Prescription Recognition</div>
+                    <div class="service-desc">Upload handwritten or printed prescriptions. AI extracts and digitizes medication details.</div>
+                </div>
+                <div class="service-arrow"><i class="fas fa-arrow-right"></i> Open tool</div>
+            </a>
+
+            <a href="{{ url_for('ai_consultant') }}" class="service-card">
+                <div class="service-icon" style="background: #F0FDF4; color: #059669;">
+                    <i class="fas fa-stethoscope"></i>
+                </div>
+                <div>
+                    <div class="service-title">AI Consultant</div>
+                    <div class="service-desc">Enter symptoms to receive AI-powered disease predictions, medications, and health recommendations.</div>
+                </div>
+                <div class="service-arrow"><i class="fas fa-arrow-right"></i> Open tool</div>
+            </a>
+
+            <a href="{{ url_for('chatbot') }}" class="service-card">
+                <div class="service-icon" style="background: #F5F3FF; color: #7C3AED;">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <div>
+                    <div class="service-title">Medical Assistant</div>
+                    <div class="service-desc">Conversational AI assistant for health questions, medication info, and clinical guidance.</div>
+                </div>
+                <div class="service-arrow"><i class="fas fa-arrow-right"></i> Open tool</div>
+            </a>
+
+            <a href="{{ url_for('medicine_search') }}" class="service-card">
+                <div class="service-icon" style="background: #FFFBEB; color: #D97706;">
+                    <i class="fas fa-pills"></i>
+                </div>
+                <div>
+                    <div class="service-title">Medicine Search</div>
+                    <div class="service-desc">Compare medicine prices across Truemeds, PharmEasy, Tata 1mg, and Netmeds.</div>
+                </div>
+                <div class="service-arrow"><i class="fas fa-arrow-right"></i> Open tool</div>
+            </a>
+
+            <a href="{{ url_for('doctor_consultation') }}" class="service-card">
+                <div class="service-icon" style="background: #E0F2FE; color: #0284C7;">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <div>
+                    <div class="service-title">Doctor Consultation</div>
+                    <div class="service-desc">Find and book certified doctors based on your symptoms and location.</div>
+                </div>
+                <div class="service-arrow"><i class="fas fa-arrow-right"></i> Open tool</div>
+            </a>
+
+            <a href="{{ url_for('emergency') }}" class="service-card">
+                <div class="service-icon" style="background: #FEF2F2; color: #DC2626;">
+                    <i class="fas fa-ambulance"></i>
+                </div>
+                <div>
+                    <div class="service-title">Emergency Services</div>
+                    <div class="service-desc">Locate nearby hospitals and send emergency alerts instantly.</div>
+                </div>
+                <div class="service-arrow"><i class="fas fa-arrow-right"></i> Open tool</div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Lower: Activity + Quick Actions -->
+    <div class="dashboard-lower">
+        <!-- Recent Activity -->
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">Recent Activity</div>
+                    <div class="card-subtitle">Your latest clinical actions</div>
+                </div>
+            </div>
+            <div class="card-body" style="padding-top: 8px; padding-bottom: 8px;">
+                <div class="activity-feed">
+                    <div class="activity-item">
+                        <div class="activity-icon-wrap" style="background: var(--accent-light); color: var(--accent);">
+                            <i class="fas fa-file-prescription"></i>
+                        </div>
+                        <div>
+                            <div class="activity-text"><strong>Prescription uploaded</strong> and analyzed successfully</div>
+                            <div class="activity-time">2 hours ago</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon-wrap" style="background: var(--success-light); color: var(--success);">
+                            <i class="fas fa-stethoscope"></i>
+                        </div>
+                        <div>
+                            <div class="activity-text"><strong>AI Consultation</strong> completed — Migraine prediction</div>
+                            <div class="activity-time">Yesterday, 3:40 PM</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon-wrap" style="background: #F5F3FF; color: #7C3AED;">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <div>
+                            <div class="activity-text"><strong>Medical Assistant</strong> session — 6 messages</div>
+                            <div class="activity-time">Yesterday, 11:20 AM</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon-wrap" style="background: var(--warning-light); color: var(--warning);">
+                            <i class="fas fa-pills"></i>
+                        </div>
+                        <div>
+                            <div class="activity-text"><strong>Medicine search</strong> — Paracetamol 500mg</div>
+                            <div class="activity-time">2 days ago</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon-wrap" style="background: var(--info-light); color: var(--info);">
+                            <i class="fas fa-user-md"></i>
+                        </div>
+                        <div>
+                            <div class="activity-text"><strong>Appointment booked</strong> with Dr. S. Reddy</div>
+                            <div class="activity-time">3 days ago</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Quick Actions</div>
+            </div>
+            <div class="card-body" style="padding: 12px;">
+                <div class="quick-actions-grid">
+                    <a href="{{ url_for('medscript') }}" class="quick-action-btn">
+                        <div class="quick-action-icon"><i class="fas fa-upload"></i></div>
+                        <div>
+                            <div class="quick-action-label">Upload Prescription</div>
+                            <div class="quick-action-desc">Digitize a new prescription</div>
+                        </div>
+                        <div class="quick-action-arrow"><i class="fas fa-chevron-right"></i></div>
+                    </a>
+                    <a href="{{ url_for('ai_consultant') }}" class="quick-action-btn">
+                        <div class="quick-action-icon"><i class="fas fa-search-plus"></i></div>
+                        <div>
+                            <div class="quick-action-label">Check Symptoms</div>
+                            <div class="quick-action-desc">AI-powered diagnosis</div>
+                        </div>
+                        <div class="quick-action-arrow"><i class="fas fa-chevron-right"></i></div>
+                    </a>
+                    <a href="{{ url_for('chatbot') }}" class="quick-action-btn">
+                        <div class="quick-action-icon"><i class="fas fa-comment-medical"></i></div>
+                        <div>
+                            <div class="quick-action-label">Ask Assistant</div>
+                            <div class="quick-action-desc">Get instant health answers</div>
+                        </div>
+                        <div class="quick-action-arrow"><i class="fas fa-chevron-right"></i></div>
+                    </a>
+                    <a href="{{ url_for('medicine_search') }}" class="quick-action-btn">
+                        <div class="quick-action-icon"><i class="fas fa-search-dollar"></i></div>
+                        <div>
+                            <div class="quick-action-label">Compare Medicines</div>
+                            <div class="quick-action-desc">Find the best pharmacy price</div>
+                        </div>
+                        <div class="quick-action-arrow"><i class="fas fa-chevron-right"></i></div>
+                    </a>
+                    <a href="{{ url_for('doctor_consultation') }}" class="quick-action-btn">
+                        <div class="quick-action-icon"><i class="fas fa-calendar-plus"></i></div>
+                        <div>
+                            <div class="quick-action-label">Book Doctor</div>
+                            <div class="quick-action-desc">Schedule a consultation</div>
+                        </div>
+                        <div class="quick-action-arrow"><i class="fas fa-chevron-right"></i></div>
+                    </a>
+                    <a href="{{ url_for('emergency') }}" class="quick-action-btn" style="border-color: var(--error-border);">
+                        <div class="quick-action-icon" style="background: var(--error-light); color: var(--error);"><i class="fas fa-ambulance"></i></div>
+                        <div>
+                            <div class="quick-action-label" style="color: var(--error);">Emergency</div>
+                            <div class="quick-action-desc">Find nearby hospitals</div>
+                        </div>
+                        <div class="quick-action-arrow"><i class="fas fa-chevron-right"></i></div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block page_scripts %}
 <script>
-// Update current time and date
-function updateDateTime() {
-    const now = new Date();
-    document.getElementById('currentTime').textContent = now.toLocaleTimeString();
-    document.getElementById('currentDate').textContent = now.toLocaleDateString();
-}
-setInterval(updateDateTime, 1000);
-updateDateTime();
-
-// Update click handlers
-document.addEventListener('DOMContentLoaded', function() {
-    // Add click handlers for all elements with data-href attribute
-    const clickableElements = document.querySelectorAll('[data-href]');
-    clickableElements.forEach(element => {
-        element.style.cursor = 'pointer';
-        element.addEventListener('click', function() {
-            const href = this.getAttribute('data-href');
-            if (href) {
-                window.location.href = href;
-            }
-        });
-    });
-});
-
-// Weekly Activity Chart with updated height
-const weeklyActivityOptions = {
-    series: [{
-        name: 'Activity',
-        data: [30, 40, 25, 50, 49, 60, 70]
-    }],
-    chart: {
-        type: 'line',
-        height: 300,
-        toolbar: {
-            show: false
-        }
-    },
-    colors: ['#44BBA4'],
-    stroke: {
-        curve: 'smooth',
-        width: 3
-    },
-    xaxis: {
-        categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    },
-    yaxis: {
-        show: false
-    },
-    grid: {
-        show: false
-    },
-    markers: {
-        size: 5,
-        colors: ['#44BBA4'],
-        strokeColors: '#fff',
-        strokeWidth: 2
-    },
-    tooltip: {
-        theme: 'light',
-        y: {
-            formatter: function(value) {
-                return value + ' activities';
-            }
-        }
-    }
-};
-
-// Monthly Appointments Chart with updated height
-const appointmentsOptions = {
-    series: [{
-        name: 'Appointments',
-        data: [3, 2, 4, 2, 1, 3]
-    }],
-    chart: {
-        type: 'bar',
-        height: 300,
-        toolbar: {
-            show: false
-        }
-    },
-    colors: ['#44BBA4'],
-    plotOptions: {
-        bar: {
-            borderRadius: 8,
-            columnWidth: '60%'
-        }
-    },
-    xaxis: {
-        categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
-    },
-    yaxis: {
-        title: {
-            text: 'Number of Appointments'
-        }
-    },
-    tooltip: {
-        y: {
-            formatter: function(value) {
-                return value + ' appointments';
-            }
-        }
-    }
-};
-
-const weeklyActivityChart = new ApexCharts(document.querySelector("#weeklyActivityChart"), weeklyActivityOptions);
-weeklyActivityChart.render();
-
-const appointmentsChart = new ApexCharts(document.querySelector("#appointmentsChart"), appointmentsOptions);
-appointmentsChart.render();
+// Update date
+(function() {
+    const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    document.getElementById('dashDate').textContent = new Date().toLocaleDateString('en-IN', opts);
+})();
 </script>
 {% endblock %}
