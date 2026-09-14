@@ -1,0 +1,153 @@
+name: MedScript CD / Build & Deploy
+
+on:
+  push:
+    branches: [ main ]
+  release:
+    types: [ published ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target Deployment Environment"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+          - staging
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # ============================================================
+  # 1. BUILD & PUBLISH CONTAINER IMAGE
+  # ============================================================
+  build-and-publish:
+    name: Build & Publish Container Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker Metadata (Tags & Labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=sha,format=short,prefix=sha-
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build & Push Production Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ============================================================
+  # 2. AUTOMATED DEPLOYMENT
+  # ============================================================
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-and-publish]
+    environment:
+      name: ${{ inputs.environment || 'production' }}
+      url: ${{ secrets.APP_URL || 'https://medscript.example.com' }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Deployment Strategy A: Webhook-based trigger (Render, Railway, Portainer, CapRover)
+      - name: Deploy via Deploy Webhook
+        if: env.DEPLOY_WEBHOOK != ''
+        env:
+          DEPLOY_WEBHOOK: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+        run: |
+          echo "Triggering deployment webhook..."
+          curl -s -f -X POST "$DEPLOY_WEBHOOK"
+          echo "Deployment webhook triggered successfully."
+
+      # Deployment Strategy B: SSH-based VM deployment (DigitalOcean, AWS EC2, GCP)
+      - name: Deploy via SSH Remote VM
+        if: env.SSH_HOST != '' && env.DEPLOY_WEBHOOK == ''
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+            cd /opt/medscript || cd /var/www/medscript
+            docker pull ghcr.io/${{ github.repository }}:latest
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker image prune -f
+
+      # Fallback log notice if secrets are not yet configured in GitHub Repo settings
+      - name: Report Deployment Configuration Status
+        if: env.DEPLOY_WEBHOOK == '' && env.SSH_HOST == ''
+        env:
+          DEPLOY_WEBHOOK: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          echo "=========================================================================="
+          echo "Container image built and published to GHCR:"
+          echo "  ghcr.io/${{ github.repository }}:latest"
+          echo ""
+          echo "To activate automatic remote deployment, configure either:"
+          echo "  1. DEPLOY_WEBHOOK_URL (for cloud hosting like Render/Railway/CapRover)"
+          echo "  2. SSH_HOST, SSH_USER, SSH_PRIVATE_KEY (for Linux VPS / EC2 instances)"
+          echo "=========================================================================="
+
+  # ============================================================
+  # 3. POST-DEPLOYMENT HEALTH SMOKE TEST
+  # ============================================================
+  smoke-test:
+    name: Smoke Test Live Health Endpoint
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: env.APP_URL != ''
+    env:
+      APP_URL: ${{ secrets.APP_URL }}
+
+    steps:
+      - name: Verify Live Health Endpoint
+        run: |
+          echo "Checking health of $APP_URL/health ..."
+          for i in {1..10}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL/health" || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "Smoke test passed: Health endpoint returned HTTP 200 OK"
+              exit 0
+            fi
+            echo "Waiting for service to stabilize (HTTP status: $STATUS)..."
+            sleep 6
+          done
+          echo "Smoke test timed out after 60 seconds."
+          exit 1

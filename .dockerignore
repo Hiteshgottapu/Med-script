@@ -1,0 +1,45 @@
+# Git and GitHub
+.git
+.gitignore
+.github
+
+# Environment files and secrets
+.env
+.env.*
+*.env
+firebase_certs.json
+
+# Test directories and session caches
+tests/
+test_flask_session/
+flask_session/
+.pytest_cache/
+
+# Databases and temporary storage
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+medscript_commerce.db
+test_medscript_commerce.db
+
+# Python bytecode and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Documentation and markdown
+*.md

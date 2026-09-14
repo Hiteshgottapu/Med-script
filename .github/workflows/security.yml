@@ -1,0 +1,42 @@
+name: Scheduled Security Audit
+
+on:
+  schedule:
+    # Run every Monday at 04:00 UTC
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    name: Dependency & Code Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Audit Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit bandit
+
+      - name: Scan Python Code with Bandit
+        run: |
+          bandit -r blueprints services core app.py config.py -ll -ii \
+            -f txt -o bandit-report.txt || true
+
+      - name: Check Dependencies with pip-audit
+        run: |
+          pip-audit -r requirements.txt || true
+
+      - name: Upload Security Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit-report
+          path: bandit-report.txt
