@@ -17,6 +17,8 @@ ENV/
 # Flask session and runtime storage
 flask_session/
 *.db
+*.db-shm
+*.db-wal
 *.sqlite
 *.sqlite3
 medscript_commerce.db
