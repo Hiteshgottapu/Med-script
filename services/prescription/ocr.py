@@ -101,7 +101,7 @@ def extract_text_from_image(file):
                 "Do NOT wrap with commentary, return only the JSON block."
             )
 
-            models = [config.GEMINI_MODEL, "gemini-1.5-flash", "gemini-2.0-flash"]
+            models = [config.GEMINI_MODEL, "gemini-3.8-flash", "gemini-3.7-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
             for model_name in models:
                 try:
                     api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"

@@ -37,9 +37,10 @@ class MedicalChatbotService:
         self.primary_model = config.GEMINI_MODEL
         self.fallback_models = [
             self.primary_model,
-            "gemini-1.5-flash",
+            "gemini-3.8-flash",
+            "gemini-3.7-flash",
             "gemini-2.0-flash",
-            "gemini-1.5-pro"
+            "gemini-1.5-flash"
         ]
         # Deduplicate
         seen = set()

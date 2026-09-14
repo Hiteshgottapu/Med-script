@@ -16,7 +16,7 @@ services:
       - SUPABASE_KEY=${SUPABASE_KEY}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-1.5-flash}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.7-flash}
       - EMAIL_PASSWORD=${EMAIL_PASSWORD:-}
     volumes:
       - medscript-storage:/app/uploads

@@ -238,7 +238,7 @@ Med-script/
 | **Frontend** | Vanilla CSS (design-system.css), Vanilla JS |
 | **Auth & Database** | Supabase (PostgreSQL + GoTrue Auth) |
 | **Commerce Cache** | SQLite (WAL mode) |
-| **AI / LLM** | Google Gemini 1.5 Flash |
+| **AI / LLM** | Google Gemini 3.7 Flash (primary), 3.8 Flash, 2.0 Flash (fallbacks) |
 | **OCR** | Google Cloud Vision API |
 | **ML Classifiers** | Scikit-Learn (SVM + Random Forest ensemble) |
 | **External APIs** | OpenFDA, NIH RxNorm, PharmEasy |
