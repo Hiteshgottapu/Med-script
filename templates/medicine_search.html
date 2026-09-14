@@ -8,27 +8,37 @@
 
 {% block content %}
 <div class="med-search-wrapper">
-  <!-- Header Row with Disclaimer & Cart Trigger -->
-  <div class="med-header-row">
-    <div>
-      <div class="med-header-title">
-        <i class="fas fa-pills" style="color: var(--accent, #0d9488);"></i>
-        Medicine Search & Price Comparison
+  <!-- Hero Banner with Live Clinical Stats & Cart Trigger -->
+  <div class="med-hero-banner">
+    <div class="med-hero-content">
+      <div class="med-hero-badge">
+        <span class="pulse-dot"></span>
+        <span>Verified Clinical Network &bull; Live Medicine Commerce</span>
       </div>
-      <div class="med-header-subtitle">
-        Search live medicine data, verified formulations, stock availability, and lowest prices across leading Indian pharmacies and authoritative clinical databases.
-      </div>
-      <div class="med-disclaimer-pill">
-        <i class="fas fa-shield-alt"></i>
-        <span><strong>Information & Ordering Workflow:</strong> MedScript provides verified data retrieval and integrated concierge medicine ordering with Schedule H prescription validation.</span>
+      <h1 class="med-header-title">
+        <i class="fas fa-pills" style="color: #0d9488;"></i>
+        Medicine Search & Procurement Engine
+      </h1>
+      <p class="med-header-subtitle">
+        Search live medicine formulations, compare side-by-side pharmacy pricing, verify Schedule H prescriptions, and execute concierge orders.
+      </p>
+      <div class="med-hero-stats">
+        <span class="hero-stat-pill"><i class="fas fa-bolt" style="color: #10b981;"></i> PharmEasy Live Sync</span>
+        <span class="hero-stat-pill"><i class="fas fa-shield-check" style="color: #0284c7;"></i> Schedule H Compliance</span>
+        <span class="hero-stat-pill"><i class="fas fa-truck" style="color: #8b5cf6;"></i> Free Delivery &gt; ₹500</span>
       </div>
     </div>
 
     <!-- Active Cart Drawer Trigger -->
-    <button type="button" class="cart-trigger-btn" onclick="openCartDrawer()">
-      <i class="fas fa-shopping-bag"></i>
-      <span>Medicine Cart</span>
-      <span id="cartCountBadge" class="cart-badge">0</span>
+    <button type="button" class="cart-trigger-btn" onclick="openCartDrawer()" title="View your medicine cart">
+      <div class="cart-btn-icon-wrap">
+        <i class="fas fa-shopping-bag"></i>
+        <span id="cartCountBadge" class="cart-badge">0</span>
+      </div>
+      <div class="cart-btn-text">
+        <span class="cart-btn-title">Medicine Cart</span>
+        <span class="cart-btn-sub" id="cartHeaderSubtotal">₹0.00</span>
+      </div>
     </button>
   </div>
 
@@ -82,42 +92,56 @@
       </span>
     </div>
 
-    <div class="filter-group">
-      <!-- Dosage Form Filter -->
-      <select id="formFilter" class="filter-select" onchange="applyFilters()">
-        <option value="all">All Forms</option>
-        <option value="Tablet">Tablet</option>
-        <option value="Capsule">Capsule</option>
-        <option value="Syrup">Syrup</option>
-        <option value="Suspension">Suspension</option>
-        <option value="Injection">Injection</option>
-        <option value="Drops">Drops</option>
-        <option value="Gel">Gel</option>
-        <option value="Ointment">Ointment</option>
-      </select>
+    <div class="filter-actions-wrapper">
+      <div class="filter-group">
+        <!-- Dosage Form Filter -->
+        <select id="formFilter" class="filter-select" onchange="applyFilters()">
+          <option value="all">All Forms</option>
+          <option value="Tablet">Tablet</option>
+          <option value="Capsule">Capsule</option>
+          <option value="Syrup">Syrup</option>
+          <option value="Suspension">Suspension</option>
+          <option value="Injection">Injection</option>
+          <option value="Drops">Drops</option>
+          <option value="Gel">Gel</option>
+          <option value="Ointment">Ointment</option>
+        </select>
 
-      <!-- Availability Filter -->
-      <select id="availFilter" class="filter-select" onchange="applyFilters()">
-        <option value="all">All Availability</option>
-        <option value="In Stock">In Stock Only</option>
-        <option value="Out of Stock">Out of Stock</option>
-      </select>
+        <!-- Availability Filter -->
+        <select id="availFilter" class="filter-select" onchange="applyFilters()">
+          <option value="all">All Availability</option>
+          <option value="In Stock">In Stock Only</option>
+          <option value="Out of Stock">Out of Stock</option>
+        </select>
 
-      <!-- Source Filter -->
-      <select id="sourceFilter" class="filter-select" onchange="applyFilters()">
-        <option value="all">All Sources</option>
-        <option value="PharmEasy">PharmEasy</option>
-        <option value="OpenFDA">OpenFDA Clinical</option>
-        <option value="RxNorm">RxNorm NLM</option>
-      </select>
+        <!-- Source Filter -->
+        <select id="sourceFilter" class="filter-select" onchange="applyFilters()">
+          <option value="all">All Sources</option>
+          <option value="PharmEasy">PharmEasy</option>
+          <option value="OpenFDA">OpenFDA Clinical</option>
+          <option value="RxNorm">RxNorm NLM</option>
+        </select>
 
-      <!-- Sort Filter -->
-      <select id="sortFilter" class="filter-select" onchange="applyFilters()">
-        <option value="relevance">Sort: Relevance</option>
-        <option value="price_asc">Price: Low to High</option>
-        <option value="price_desc">Price: High to Low</option>
-        <option value="name_asc">Name: A to Z</option>
-      </select>
+        <!-- Sort Filter -->
+        <select id="sortFilter" class="filter-select" onchange="applyFilters()">
+          <option value="relevance">Sort: Relevance</option>
+          <option value="price_asc">Price: Low to High</option>
+          <option value="price_desc">Price: High to Low</option>
+          <option value="name_asc">Name: A to Z</option>
+        </select>
+      </div>
+
+      <!-- View Switcher (Grid vs List) -->
+      <div class="view-switcher-group">
+        <button type="button" id="viewToggleGrid" class="view-toggle-btn active" title="Card Grid View" onclick="setViewMode('grid')">
+          <i class="fas fa-th-large"></i>
+          <span>Grid</span>
+        </button>
+        <button type="button" id="viewToggleList" class="view-toggle-btn" title="Dense List View" onclick="setViewMode('list')">
+          <i class="fas fa-list"></i>
+          <span>List</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -214,22 +238,29 @@
   </div>
 
   <div class="cart-drawer-body">
-    <!-- Free Delivery Progress -->
-    <div id="freeShippingBanner" class="free-shipping-progress">
-      <i class="fas fa-truck"></i>
-      <span id="freeShippingText">Free standard delivery on orders over ₹500</span>
+    <!-- Free Delivery Milestone Progress -->
+    <div class="free-shipping-card">
+      <div class="free-shipping-header">
+        <div class="free-shipping-icon"><i class="fas fa-truck-fast"></i></div>
+        <div style="flex: 1;">
+          <div id="freeShippingText" class="free-shipping-text">Free standard delivery on orders over ₹500</div>
+          <div class="free-shipping-bar-wrap">
+            <div id="freeShippingBar" class="free-shipping-bar" style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Prescription Requirement Notice -->
-    <div id="cartRxNotice" style="display: none; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 12px; color: #991b1b; align-items: flex-start; gap: 8px;">
-      <i class="fas fa-file-prescription" style="font-size: 15px; color: #dc2626; margin-top: 2px;"></i>
+    <div id="cartRxNotice" style="display: none;" class="cart-rx-banner">
+      <i class="fas fa-file-prescription cart-rx-icon"></i>
       <div>
-        <strong>Schedule H Prescription Required:</strong> One or more items in your cart mandate a doctor's prescription. You will upload it during checkout.
+        <strong>Schedule H Drug Attached:</strong> One or more items in your cart mandate an authorized clinical prescription. You can upload or attach it during checkout.
       </div>
     </div>
 
     <!-- Items List -->
-    <div id="cartItemsList"></div>
+    <div id="cartItemsList" class="cart-items-scroll"></div>
   </div>
 
   <div class="cart-drawer-footer">

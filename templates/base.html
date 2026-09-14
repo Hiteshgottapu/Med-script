@@ -9,7 +9,7 @@
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
     <!-- Design System -->
@@ -33,9 +33,9 @@
     <aside class="sidebar" id="appSidebar">
         <!-- Logo -->
         <div class="sidebar-logo" onclick="window.location.href='{{ url_for('index') }}'">
-            <div class="sidebar-logo-mark">Rx</div>
+            <div class="sidebar-logo-mark"><i class="fas fa-heart-pulse"></i></div>
             <div>
-                <div class="sidebar-logo-text">MedScript</div>
+                <div class="sidebar-logo-text">MedScript <span class="badge-pro">PRO</span></div>
                 <span class="sidebar-logo-tagline">Clinical Workspace</span>
             </div>
             <button class="sidebar-toggle-btn" id="sidebarToggle" title="Collapse sidebar" onclick="event.stopPropagation(); toggleSidebar()">
@@ -140,11 +140,18 @@
                     <span class="crumb-sep"><i class="fas fa-chevron-right" style="font-size:10px;"></i></span>
                     <span class="crumb-current">{% block page_title %}Dashboard{% endblock %}</span>
                 </div>
+                <!-- Live Clinical Status Pill -->
+                <div class="topbar-live-status">
+                    <span class="pulse-dot"></span>
+                    <span>Live Clinical Sync &bull; 3 Sources Active</span>
+                </div>
             </div>
             <div class="topbar-right">
-                <!-- Command Palette Trigger -->
-                <button class="topbar-btn" id="cmdPaletteBtn" title="Quick search (Ctrl+K)" onclick="openCommandPalette()">
-                    <i class="fas fa-search"></i>
+                <!-- Command Palette Trigger Pill -->
+                <button class="topbar-search-trigger" id="cmdPaletteBtn" title="Quick search (Ctrl+K)" onclick="openCommandPalette()">
+                    <i class="fas fa-search search-icon"></i>
+                    <span class="search-hint">Search clinical workspace...</span>
+                    <kbd class="shortcut-kbd">Ctrl K</kbd>
                 </button>
 
                 <!-- Notifications -->

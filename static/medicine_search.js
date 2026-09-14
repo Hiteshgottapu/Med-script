@@ -61,15 +61,25 @@ async function fetchCart() {
 
 function updateCartUI() {
   cartCountBadge.textContent = currentCart.total_items;
+  const headerSubtotal = document.getElementById('cartHeaderSubtotal');
+  if (headerSubtotal) {
+    headerSubtotal.textContent = `₹${currentCart.subtotal.toFixed(2)}`;
+  }
   cartSubtotalVal.textContent = `₹${currentCart.subtotal.toFixed(2)}`;
   cartDeliveryFeeVal.textContent = currentCart.delivery_fee === 0 ? 'FREE' : `₹${currentCart.delivery_fee.toFixed(2)}`;
   cartTaxVal.textContent = `₹${currentCart.tax_amount.toFixed(2)}`;
   cartTotalVal.textContent = `₹${currentCart.total_amount.toFixed(2)}`;
 
+  const freeShippingBar = document.getElementById('freeShippingBar');
+  const freePercent = Math.min(100, Math.max(0, Math.round((currentCart.subtotal / 500) * 100)));
+  if (freeShippingBar) {
+    freeShippingBar.style.width = `${freePercent}%`;
+  }
+
   if (currentCart.amount_needed_for_free_delivery <= 0) {
-    freeShippingText.innerHTML = '<strong>Unlocked!</strong> You have qualified for FREE Standard Delivery.';
+    freeShippingText.innerHTML = '<strong>🎉 Unlocked!</strong> Qualified for FREE Standard Delivery (100%).';
   } else {
-    freeShippingText.innerHTML = `Add <strong>₹${currentCart.amount_needed_for_free_delivery.toFixed(2)}</strong> more to get <strong>FREE Standard Delivery</strong>.`;
+    freeShippingText.innerHTML = `Add <strong>₹${currentCart.amount_needed_for_free_delivery.toFixed(2)}</strong> more for <strong>FREE Delivery</strong> (${freePercent}% achieved)`;
   }
 
   // Update Prescription Notice in Cart Drawer
@@ -837,7 +847,41 @@ function renderMedicineCards(medicines) {
     resultsGrid.appendChild(card);
   });
 
-  resultsGrid.style.display = 'grid';
+  if (currentViewMode === 'list') {
+    resultsGrid.classList.add('list-view');
+    resultsGrid.style.display = 'flex';
+  } else {
+    resultsGrid.classList.remove('list-view');
+    resultsGrid.style.display = 'grid';
+  }
+}
+
+// View Mode Management (Grid vs List)
+let currentViewMode = localStorage.getItem('medscript_view_mode') || 'grid';
+
+function setViewMode(mode) {
+  currentViewMode = mode;
+  localStorage.setItem('medscript_view_mode', mode);
+
+  const gridBtn = document.getElementById('viewToggleGrid');
+  const listBtn = document.getElementById('viewToggleList');
+  if (gridBtn && listBtn) {
+    if (mode === 'list') {
+      listBtn.classList.add('active');
+      gridBtn.classList.remove('active');
+      resultsGrid.classList.add('list-view');
+      if (resultsGrid.style.display !== 'none') {
+        resultsGrid.style.display = 'flex';
+      }
+    } else {
+      gridBtn.classList.add('active');
+      listBtn.classList.remove('active');
+      resultsGrid.classList.remove('list-view');
+      if (resultsGrid.style.display !== 'none') {
+        resultsGrid.style.display = 'grid';
+      }
+    }
+  }
 }
 
 function resetFilters() {
@@ -860,6 +904,9 @@ function escapeHtml(str) {
 
 window.addEventListener('DOMContentLoaded', () => {
   fetchCart();
+  const savedMode = localStorage.getItem('medscript_view_mode') || 'grid';
+  setViewMode(savedMode);
+
   const urlParams = new URLSearchParams(window.location.search);
   const q = urlParams.get('q') || urlParams.get('medicine_name') || currentQuery;
   if (q && q.trim()) {
