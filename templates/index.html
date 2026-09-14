@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 
@@ -130,27 +130,27 @@
 
 <div class="dashboard-body">
 
-    <!-- Stats Row -->
+    <!-- Stats Row (Dynamic Real Values) -->
     <div class="stats-row">
         <div class="stat-card accent">
-            <div class="stat-label">Prescriptions Analyzed</div>
-            <div class="stat-value">12</div>
-            <div class="stat-delta up"><i class="fas fa-arrow-up"></i> 3 this week</div>
+            <div class="stat-label">Prescriptions Digitized</div>
+            <div class="stat-value">{{ stats.prescriptions_count if stats else 0 }}</div>
+            <div class="stat-delta up"><i class="fas fa-file-medical"></i> {{ stats.prescriptions_delta if stats else '0 uploaded' }}</div>
         </div>
         <div class="stat-card success">
-            <div class="stat-label">Consultations</div>
-            <div class="stat-value">5</div>
-            <div class="stat-delta neutral"><i class="fas fa-minus"></i> This month</div>
+            <div class="stat-label">Verified Orders</div>
+            <div class="stat-value">{{ stats.orders_count if stats else 0 }}</div>
+            <div class="stat-delta neutral"><i class="fas fa-shopping-bag"></i> {{ stats.orders_delta if stats else 'Commerce active' }}</div>
         </div>
         <div class="stat-card warning">
-            <div class="stat-label">Health Checks</div>
-            <div class="stat-value">3</div>
-            <div class="stat-delta up"><i class="fas fa-arrow-up"></i> 1 today</div>
+            <div class="stat-label">AI Consultations</div>
+            <div class="stat-value">{{ stats.consultations_count if stats else 0 }}</div>
+            <div class="stat-delta up"><i class="fas fa-stethoscope"></i> {{ stats.consultations_delta if stats else 'AI model loaded' }}</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Emergency Alerts</div>
-            <div class="stat-value">0</div>
-            <div class="stat-delta neutral" style="color: var(--success);"><i class="fas fa-check-circle"></i> All clear</div>
+            <div class="stat-value">{{ stats.emergency_alerts_count if stats else 0 }}</div>
+            <div class="stat-delta neutral" style="color: var(--success);"><i class="fas fa-shield-alt"></i> {{ stats.emergency_delta if stats else 'All clear' }}</div>
         </div>
     </div>
 
@@ -239,53 +239,34 @@
                 </div>
             </div>
             <div class="card-body" style="padding-top: 8px; padding-bottom: 8px;">
+                {% if stats and stats.activities %}
                 <div class="activity-feed">
+                    {% for act in stats.activities %}
                     <div class="activity-item">
-                        <div class="activity-icon-wrap" style="background: var(--accent-light); color: var(--accent);">
-                            <i class="fas fa-file-prescription"></i>
+                        <div class="activity-icon-wrap" style="background: {{ act.color_bg }}; color: {{ act.color_fg }};">
+                            <i class="fas {{ act.icon }}"></i>
                         </div>
                         <div>
-                            <div class="activity-text"><strong>Prescription uploaded</strong> and analyzed successfully</div>
-                            <div class="activity-time">2 hours ago</div>
+                            <div class="activity-text"><strong>{{ act.title }}</strong></div>
+                            <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">{{ act.detail }}</div>
+                            <div class="activity-time"><i class="far fa-clock"></i> {{ act.time }}</div>
                         </div>
                     </div>
-                    <div class="activity-item">
-                        <div class="activity-icon-wrap" style="background: var(--success-light); color: var(--success);">
-                            <i class="fas fa-stethoscope"></i>
-                        </div>
-                        <div>
-                            <div class="activity-text"><strong>AI Consultation</strong> completed — Migraine prediction</div>
-                            <div class="activity-time">Yesterday, 3:40 PM</div>
-                        </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div style="text-align: center; padding: 40px 20px;">
+                    <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--surface-1); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; color: var(--text-muted); font-size: 20px;">
+                        <i class="fas fa-clipboard-check"></i>
                     </div>
-                    <div class="activity-item">
-                        <div class="activity-icon-wrap" style="background: #F5F3FF; color: #7C3AED;">
-                            <i class="fas fa-comments"></i>
-                        </div>
-                        <div>
-                            <div class="activity-text"><strong>Medical Assistant</strong> session — 6 messages</div>
-                            <div class="activity-time">Yesterday, 11:20 AM</div>
-                        </div>
-                    </div>
-                    <div class="activity-item">
-                        <div class="activity-icon-wrap" style="background: var(--warning-light); color: var(--warning);">
-                            <i class="fas fa-pills"></i>
-                        </div>
-                        <div>
-                            <div class="activity-text"><strong>Medicine search</strong> — Paracetamol 500mg</div>
-                            <div class="activity-time">2 days ago</div>
-                        </div>
-                    </div>
-                    <div class="activity-item">
-                        <div class="activity-icon-wrap" style="background: var(--info-light); color: var(--info);">
-                            <i class="fas fa-user-md"></i>
-                        </div>
-                        <div>
-                            <div class="activity-text"><strong>Appointment booked</strong> with Dr. S. Reddy</div>
-                            <div class="activity-time">3 days ago</div>
-                        </div>
+                    <div style="font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">No Recent Activity</div>
+                    <div style="font-size: 13px; color: var(--text-muted); max-width: 320px; margin: 0 auto 16px; line-height: 1.5;">Your uploads, AI consultations, and medicine orders will appear here automatically.</div>
+                    <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                        <a href="{{ url_for('medscript') }}" class="btn btn-secondary btn-xs"><i class="fas fa-upload"></i> Scan Prescription</a>
+                        <a href="{{ url_for('ai_consultant') }}" class="btn btn-primary btn-xs"><i class="fas fa-stethoscope"></i> Check Symptoms</a>
                     </div>
                 </div>
+                {% endif %}
             </div>
         </div>
 

@@ -35,7 +35,7 @@ MedScript is an enterprise AI-powered clinical workflow and pharmacy commerce pl
 | **AI Clinical Consultant** | Multi-symptom disease prediction (SVM + Random Forest ensemble) with contraindications, dietary advice, and lifestyle recommendations |
 | **Live Medicine Search** | Real-time medicine data from PharmEasy, OpenFDA, and RxNorm APIs — normalized, deduplicated, and displayed side-by-side with price comparison |
 | **Medicine Commerce** | Persistent cart, Schedule H prescription validation, checkout, payment gateway stub, and order management with external pharmacy links |
-| **AI Medical Copilot** | Conversational clinical assistant with persistent session history, powered by Google Gemini 1.5 Flash |
+| **AI Medical Copilot** | Conversational clinical assistant with persistent session history, powered by Google Gemini 3.7 Flash (with 3.8 / 2.0 / 1.5 fallback) |
 | **Doctor Consultation** | Clinical doctor matching and appointment booking workflows |
 | **Emergency Dispatch** | Geolocation-aware emergency hospital discovery and alert dispatch |
 | **Security Layer** | Rate limiting, CSRF protection, SQL injection prevention, session fingerprinting, Bandit SAST + pip-audit CVE scanning in CI |
@@ -409,18 +409,38 @@ pytest tests/ -v
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/health` | Health check (CI/CD probe) |
-| `POST` | `/auth/login` | User login |
-| `POST` | `/auth/register` | User registration |
-| `GET` | `/medicine/search?q=` | Live multi-source medicine search |
-| `POST` | `/medicine/cart/add` | Add item to cart |
-| `GET` | `/medicine/cart` | View cart contents |
-| `POST` | `/medicine/checkout` | Submit order / checkout |
-| `GET` | `/medicine/orders` | Order history |
-| `POST` | `/consultant/predict` | Symptom -> disease prediction |
-| `POST` | `/prescription/upload` | OCR prescription upload |
-| `POST` | `/chat/message` | AI copilot message |
-| `GET` | `/doctor/list` | Browse doctors |
+| `GET` | `/health` | Production health check & system status |
+| `GET, POST` | `/login` | User login & session authentication |
+| `GET, POST` | `/signup` | User account registration |
+| `GET` | `/logout` | Session signout & invalidation |
+| `GET, POST` | `/medicine` | Medicine procurement portal & side-by-side comparison |
+| `GET` | `/api/medicines/search?q=` | Live multi-source medicine search (PharmEasy, OpenFDA, RxNorm) |
+| `GET` | `/api/medicines/suggest?q=` | Real-time clinical medicine autocomplete |
+| `GET` | `/api/medicines/product?id=` | Live product details & stock revalidation |
+| `GET` | `/api/cart` | Retrieve current persistent cart state |
+| `POST` | `/api/cart/add` | Add medication item to cart |
+| `POST` | `/api/cart/update` | Update cart item quantity |
+| `POST` | `/api/cart/remove` | Remove item from cart |
+| `POST` | `/api/cart/clear` | Empty cart session |
+| `POST` | `/api/cart/revalidate` | Pre-checkout live price & stock verification |
+| `POST` | `/api/prescription/upload` | Schedule H prescription document verification |
+| `POST` | `/api/checkout/order` | Place order and generate verifiable receipt |
+| `GET` | `/order-confirmation/<order_id>` | View order confirmation & delivery status |
+| `GET, POST` | `/ai_consultant` | Symptom diagnosis workspace & disease prediction |
+| `POST` | `/predict` | ML ensemble symptom-to-disease inference |
+| `POST` | `/api/symptom-check` | JSON API for clinical symptom diagnosis |
+| `GET, POST` | `/medscript` | Prescription Vision OCR scanner & digital generator |
+| `POST` | `/api/ocr/parse` | Multimodal OCR prescription extraction API |
+| `POST` | `/api/generate-prescription` | Generate clinical prescription document |
+| `GET` | `/download_pdf` | Download signed clinical prescription PDF |
+| `GET` | `/chatbot` | AI clinical copilot workspace |
+| `POST` | `/get-response` | Gemini multi-turn conversational AI API |
+| `GET` | `/chat/history` | Retrieve conversation session history |
+| `POST` | `/chat/session/new` | Clear and start a new chat thread |
+| `GET, POST` | `/doctor_consultation` | Clinical doctor directory & specialist matching |
+| `POST` | `/schedule_appointment` | Book specialist doctor appointment |
+| `GET` | `/emergency` | Emergency dispatch & hospital locator |
+| `POST` | `/api/emergency-alert` | Instant SOS emergency broadcast alert |
 
 ---
 

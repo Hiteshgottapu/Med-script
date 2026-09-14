@@ -3,7 +3,8 @@ MedScript AI Consultant & Symptom Checker Blueprint
 """
 
 import logging
-from flask import Blueprint, request, render_template, jsonify
+from datetime import datetime
+from flask import Blueprint, request, render_template, jsonify, session
 from services.consultant import consultant_service
 
 consultant_bp = Blueprint('consultant', __name__)
@@ -45,6 +46,18 @@ def predict():
                 'my_diet': rec_diet,
                 'workout': wrkout
             })
+
+    if "consultation_history" not in session:
+        session["consultation_history"] = []
+
+    primary_disease = predictions[0]['predicted_disease'] if predictions else "General Health Assessment"
+    session["consultation_history"].insert(0, {
+        "disease": primary_disease,
+        "symptoms": symptoms[:60] + ("..." if len(symptoms) > 60 else ""),
+        "time": datetime.now().strftime("%d %b, %I:%M %p")
+    })
+    session["consultation_history"] = session["consultation_history"][:10]
+    session.modified = True
 
     return render_template(
         'ai_consultant.html',

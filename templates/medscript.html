@@ -1366,9 +1366,9 @@
                                 </div>
                             </div>
                             <div class="rx-doc-doctor-info">
-                                <div class="rx-doc-doctor-name">{{ session.get('profile', {}).get('name') or 'Dr. Clinician, M.D.' }}</div>
+                                <div class="rx-doc-doctor-name">{{ session.get('profile', {}).get('name') or 'Attending Physician' }}</div>
                                 <div class="rx-doc-doctor-spec">Physician & Clinical Specialist</div>
-                                <div class="rx-doc-doctor-reg">Medical Council Reg: #9482910</div>
+                                <div class="rx-doc-doctor-reg">Clinical Practice License Verified</div>
                             </div>
                         </div>
 
@@ -1376,27 +1376,27 @@
                         <div class="rx-doc-patient-bar">
                             <div>
                                 <div class="rx-doc-field-label">Patient Name</div>
-                                <div class="rx-doc-field-val" id="docPatName">John Doe</div>
+                                <div class="rx-doc-field-val" id="docPatName">{{ session.get('profile', {}).get('name') or 'Awaiting Patient Name' }}</div>
                             </div>
                             <div>
                                 <div class="rx-doc-field-label">Age / Gender</div>
-                                <div class="rx-doc-field-val" id="docPatAgeGender">34 Y / Male</div>
+                                <div class="rx-doc-field-val" id="docPatAgeGender">-- Y / --</div>
                             </div>
                             <div>
                                 <div class="rx-doc-field-label">Patient ID</div>
-                                <div class="rx-doc-field-val" id="docPatId">PT-94821</div>
+                                <div class="rx-doc-field-val" id="docPatId">Auto-generated</div>
                             </div>
                             <div>
                                 <div class="rx-doc-field-label">Date & Time</div>
-                                <div class="rx-doc-field-val" id="docRxDate">14 Sep 2026</div>
+                                <div class="rx-doc-field-val" id="docRxDate">Current Session</div>
                             </div>
                         </div>
 
                         <!-- Diagnosis & Clinical Summary -->
                         <div class="rx-doc-diagnosis-box">
                             <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #1B6CA8; letter-spacing: 0.5px;">Clinical Diagnosis</div>
-                            <div style="font-size: 14.5px; font-weight: 700; color: #0F172A; margin-top: 2px;" id="docDiagnosis">Acute Upper Respiratory Tract Infection (URTI)</div>
-                            <div style="font-size: 12px; color: #475569; margin-top: 4px;" id="docNotes">Notes: Vitals stable. SpO2 98%. Chest clear.</div>
+                            <div style="font-size: 14.5px; font-weight: 700; color: #0F172A; margin-top: 2px;" id="docDiagnosis">Awaiting clinical diagnosis input</div>
+                            <div style="font-size: 12px; color: #475569; margin-top: 4px;" id="docNotes">Clinical observations will appear here upon entry.</div>
                         </div>
 
                         <!-- Rx Symbol & Table -->
@@ -1421,10 +1421,10 @@
                         <div style="margin-top: 24px; padding: 14px 18px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px;">
                             <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; margin-bottom: 4px;">General Instructions & Advice</div>
                             <div style="font-size: 12.5px; color: #1E293B; line-height: 1.6;" id="docInstructions">
-                                Drink warm fluids frequently. Avoid exposure to cold dust and drafts. Take full antibiotic course as prescribed.
+                                General instructions will appear here as configured.
                             </div>
                             <div style="font-size: 12px; font-weight: 600; color: #1B6CA8; margin-top: 8px;" id="docFollowUp">
-                                Follow-up: 5 days or earlier if fever persists
+                                Follow-up: As advised by physician
                             </div>
                         </div>
                     </div>
@@ -1436,7 +1436,7 @@
                         </div>
                         <div class="rx-doc-signature-block">
                             <div style="font-family: 'Brush Script MT', cursive, sans-serif; font-size: 20px; color: #1B6CA8; margin-bottom: -32px;">
-                                {{ session.get('profile', {}).get('name') or 'Dr. Clinician' }}
+                                {{ session.get('profile', {}).get('name') or 'Authorized Physician' }}
                             </div>
                             <div class="rx-doc-sig-line">
                                 Authorized Medical Signature
