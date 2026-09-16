@@ -37,12 +37,13 @@ def predict():
         if predicted_disease not in disease_set:
             disease_set.add(predicted_disease)
             dis_des, pre, med, rec_diet, wrkout = consultant_service.get_disease_details(predicted_disease)
-            my_precautions = pre[0] if pre and len(pre) > 0 else []
             predictions.append({
                 'predicted_disease': predicted_disease,
                 'dis_des': dis_des,
-                'my_precautions': my_precautions,
+                'precautions': pre,
+                'my_precautions': pre,
                 'medications': med,
+                'diets': rec_diet,
                 'my_diet': rec_diet,
                 'workout': wrkout
             })

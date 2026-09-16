@@ -3,6 +3,7 @@ MedScript AI Consultant & Disease Prediction Service
 """
 
 import os
+import ast
 import pickle
 import logging
 from collections import defaultdict
@@ -256,6 +257,32 @@ class DiseasePredictorService:
             top_diseases.append((idx, disease))
         return top_diseases
 
+    def _parse_csv_list_values(self, series_val):
+        if series_val is None:
+            return []
+        items = []
+        for val in series_val:
+            if isinstance(val, (list, tuple)):
+                for v in val:
+                    if v is not None and pd.notna(v) and str(v).strip():
+                        items.append(str(v).strip())
+            elif isinstance(val, str):
+                val_str = val.strip()
+                if val_str.startswith('[') and val_str.endswith(']'):
+                    try:
+                        parsed = ast.literal_eval(val_str)
+                        if isinstance(parsed, (list, tuple)):
+                            for p in parsed:
+                                if p is not None and pd.notna(p) and str(p).strip():
+                                    items.append(str(p).strip())
+                            continue
+                    except Exception:
+                        pass
+                val_cleaned = val_str.strip("'\"")
+                if val_cleaned and pd.notna(val_cleaned):
+                    items.append(val_cleaned)
+        return items
+
     def get_disease_details(self, dis):
         self._load_resources()
         desc_str = ""
@@ -266,23 +293,26 @@ class DiseasePredictorService:
 
         if self.description is not None:
             desc_val = self.description[self.description['Disease'] == dis]['Description']
-            desc_str = " ".join([w for w in desc_val])
+            desc_str = " ".join([str(w) for w in desc_val if pd.notna(w)])
 
         if self.precautions is not None:
-            pre_val = self.precautions[self.precautions['Disease'] == dis][['Precaution_1', 'Precaution_2', 'Precaution_3', 'Precaution_4']]
-            pre_list = [col.tolist() if hasattr(col, 'tolist') else list(col) for col in pre_val.values]
+            pre_df = self.precautions[self.precautions['Disease'] == dis]
+            cols = [c for c in ['Precaution_1', 'Precaution_2', 'Precaution_3', 'Precaution_4'] if c in pre_df.columns]
+            if cols:
+                raw_prec = pre_df[cols].values.flatten()
+                pre_list = [str(p).strip().capitalize() for p in raw_prec if pd.notna(p) and str(p).strip()]
 
         if self.medications is not None:
             med_val = self.medications[self.medications['Disease'] == dis]['Medication']
-            med_list = [m.tolist() if hasattr(m, 'tolist') else str(m) for m in med_val.values]
+            med_list = self._parse_csv_list_values(med_val.values)
 
         if self.diets is not None:
             diet_val = self.diets[self.diets['Disease'] == dis]['Diet']
-            diet_list = [d.tolist() if hasattr(d, 'tolist') else str(d) for d in diet_val.values]
+            diet_list = self._parse_csv_list_values(diet_val.values)
 
         if self.workout is not None:
             work_val = self.workout[self.workout['disease'] == dis]['workout']
-            work_list = [w.tolist() if hasattr(w, 'tolist') else str(w) for w in work_val.values]
+            work_list = self._parse_csv_list_values(work_val.values)
 
         return desc_str, pre_list, med_list, diet_list, work_list
 

@@ -1,41 +1,242 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% block title %}AI Consultant{% endblock %}
 {% block page_title %}AI Consultant{% endblock %}
 
 {% block extra_css %}
 <style>
-.consultant-layout { display: grid; grid-template-columns: 380px 1fr; gap: 0; min-height: calc(100vh - 64px); }
-.consultant-form-panel { border-right: var(--border); padding: 32px 28px; overflow-y: auto; background: var(--surface-0); }
-.consultant-results-panel { padding: 32px; overflow-y: auto; background: var(--surface-bg); }
+.consultant-layout { 
+    display: grid; 
+    grid-template-columns: 380px 1fr; 
+    gap: 0; 
+    min-height: calc(100vh - 68px); 
+    background: var(--bg-primary, #0B0F19);
+}
+.consultant-form-panel { 
+    border-right: 1px solid rgba(255, 255, 255, 0.08); 
+    padding: 32px 28px; 
+    overflow-y: auto; 
+    background: rgba(17, 24, 39, 0.6); 
+    backdrop-filter: blur(12px);
+}
+.consultant-results-panel { 
+    padding: 32px 36px; 
+    overflow-y: auto; 
+    background: transparent; 
+}
 
-.panel-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
-.panel-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; line-height: 1.6; }
+.panel-title { 
+    font-family: 'Outfit', sans-serif; 
+    font-size: 22px; 
+    font-weight: 700; 
+    color: var(--text-primary); 
+    margin-bottom: 6px; 
+}
+.panel-desc { 
+    font-size: 13px; 
+    color: var(--text-muted); 
+    margin-bottom: 24px; 
+    line-height: 1.6; 
+}
 
 /* Symptom tags */
-.symptom-tag { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent-border); border-radius: var(--radius-pill); padding: 3px 10px; font-size: 12px; font-weight: 500; margin: 2px; cursor: default; }
-.symptom-tag button { background: none; border: none; cursor: pointer; color: var(--accent); font-size: 13px; padding: 0; line-height: 1; }
+.symptom-tag { 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 6px; 
+    background: rgba(14, 165, 233, 0.12); 
+    color: #38BDF8; 
+    border: 1px solid rgba(14, 165, 233, 0.25); 
+    border-radius: var(--radius-pill); 
+    padding: 5px 12px; 
+    font-size: 12px; 
+    font-weight: 600; 
+    margin: 3px; 
+    cursor: pointer; 
+    transition: all 0.2s ease; 
+}
+.symptom-tag:hover {
+    background: rgba(14, 165, 233, 0.22);
+    border-color: #38BDF8;
+    transform: translateY(-1px);
+}
 
 /* Results */
-.result-header { display: flex; align-items: flex-start; gap: 16px; padding: 20px 24px; background: var(--surface-0); border: var(--border); border-radius: var(--radius-lg); margin-bottom: 20px; }
-.result-diagnosis-badge { width: 48px; height: 48px; border-radius: var(--radius-md); background: var(--error-light); display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--error); flex-shrink: 0; }
-.result-disease-name { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
-.result-patient-meta { font-size: 13px; color: var(--text-muted); display: flex; gap: 12px; flex-wrap: wrap; }
-.result-patient-meta span { display: flex; align-items: center; gap: 5px; }
+.result-header { 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    gap: 18px; 
+    padding: 24px 28px; 
+    background: rgba(17, 24, 39, 0.8); 
+    border: 1px solid rgba(255, 255, 255, 0.1); 
+    border-radius: 20px; 
+    margin-bottom: 20px; 
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+    backdrop-filter: blur(12px);
+}
+.result-diagnosis-badge { 
+    width: 52px; 
+    height: 52px; 
+    border-radius: 14px; 
+    background: rgba(239, 68, 68, 0.12); 
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 22px; 
+    color: #F87171; 
+    flex-shrink: 0; 
+}
+.result-disease-name { 
+    font-family: 'Outfit', sans-serif; 
+    font-size: 24px; 
+    font-weight: 800; 
+    color: #FFFFFF; 
+    margin-bottom: 6px; 
+    letter-spacing: -0.4px;
+}
+.result-patient-meta { 
+    font-size: 13px; 
+    color: var(--text-secondary); 
+    display: flex; 
+    gap: 16px; 
+    flex-wrap: wrap; 
+}
+.result-patient-meta span { 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 6px; 
+    padding: 3px 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
 
-.result-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.result-section { background: var(--surface-0); border: var(--border); border-radius: var(--radius-lg); overflow: hidden; }
-.result-section-header { padding: 14px 18px; border-bottom: var(--border); display: flex; align-items: center; gap: 10px; }
-.result-section-icon { width: 28px; height: 28px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
-.result-section-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
-.result-section-body { padding: 14px 18px; }
-.result-item { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text-secondary); padding: 4px 0; line-height: 1.5; }
-.result-item::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.5; flex-shrink: 0; margin-top: 7px; }
+.result-about-box {
+    background: rgba(17, 24, 39, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+}
 
-.no-results { display: flex; align-items: center; justify-content: center; min-height: 400px; }
+.result-sections { 
+    display: grid; 
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 18px; 
+}
+.result-section { 
+    background: rgba(17, 24, 39, 0.75); 
+    border: 1px solid rgba(255, 255, 255, 0.08); 
+    border-radius: 18px; 
+    overflow: hidden; 
+    display: flex;
+    flex-direction: column;
+}
+.result-section-header { 
+    padding: 16px 20px; 
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06); 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+}
+.result-section-icon { 
+    width: 32px; 
+    height: 32px; 
+    border-radius: 10px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 14px; 
+    flex-shrink: 0; 
+}
+.result-section-title { 
+    font-family: 'Outfit', sans-serif; 
+    font-size: 16px; 
+    font-weight: 700; 
+    color: #FFFFFF; 
+}
+.result-section-body { 
+    padding: 18px 20px; 
+    flex: 1;
+}
+
+/* Individual list item */
+.result-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.result-list-item { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    font-size: 13.5px; 
+    color: #E2E8F0; 
+    padding: 8px 12px; 
+    background: rgba(255, 255, 255, 0.03); 
+    border: 1px solid rgba(255, 255, 255, 0.05); 
+    border-radius: 10px;
+}
+.result-list-item i {
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+/* Medication pills with price links */
+.med-chip-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.med-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    background: rgba(124, 58, 237, 0.08);
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+.med-chip:hover {
+    background: rgba(124, 58, 237, 0.15);
+    border-color: rgba(124, 58, 237, 0.4);
+}
+.med-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #EDE9FE;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.med-btn {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: rgba(14, 165, 233, 0.15);
+    border: 1px solid rgba(14, 165, 233, 0.3);
+    color: #38BDF8;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+.med-btn:hover {
+    background: #0EA5E9;
+    color: white;
+}
+
+.no-results { display: flex; align-items: center; justify-content: center; min-height: 440px; }
 
 @media (max-width: 1024px) {
   .consultant-layout { grid-template-columns: 1fr; }
-  .consultant-form-panel { border-right: none; border-bottom: var(--border); }
+  .consultant-form-panel { border-right: none; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
   .result-sections { grid-template-columns: 1fr; }
 }
 </style>
@@ -45,24 +246,24 @@
 <div class="consultant-layout">
     <!-- LEFT: Form -->
     <div class="consultant-form-panel">
-        <div class="panel-title">AI Consultant</div>
-        <div class="panel-desc">Enter your details and symptoms. Our AI analyzes patterns from thousands of clinical cases to provide health insights.</div>
+        <div class="panel-title">AI Clinical Consultant</div>
+        <div class="panel-desc">Enter patient symptoms to run dual Support Vector Classifier &amp; Random Forest inference with personalized medical recommendations.</div>
 
         <form action="/predict" method="post" id="consultForm">
             <div class="form-group">
-                <label class="form-label" for="name">Full Name</label>
+                <label class="form-label" for="name">Patient Name</label>
                 <div class="input-with-icon">
                     <i class="fas fa-user input-icon"></i>
-                    <input type="text" class="form-input" id="name" name="name" placeholder="Enter your name" value="{{ name or '' }}" required>
+                    <input type="text" class="form-input" id="name" name="name" placeholder="e.g. Hema" value="{{ name or '' }}" required>
                 </div>
             </div>
 
-            <div class="form-row">
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label class="form-label" for="age">Age</label>
                     <div class="input-with-icon">
                         <i class="fas fa-birthday-cake input-icon"></i>
-                        <input type="number" class="form-input" id="age" name="age" placeholder="Age" value="{{ age or '' }}" min="1" max="120" required>
+                        <input type="number" class="form-input" id="age" name="age" placeholder="32" value="{{ age or '' }}" min="1" max="120" required>
                     </div>
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
@@ -75,48 +276,48 @@
             </div>
 
             <div class="form-group" style="margin-top: 16px;">
-                <label class="form-label" for="symptoms">Symptoms</label>
+                <label class="form-label" for="symptoms">Reported Symptoms</label>
                 <div style="position: relative;">
                     <div class="input-with-icon">
                         <i class="fas fa-stethoscope input-icon"></i>
-                        <input type="text" class="form-input" id="symptoms" name="symptoms" placeholder="e.g. itching, fatigue, headache..." value="{{ symptoms or '' }}">
+                        <input type="text" class="form-input" id="symptoms" name="symptoms" placeholder="e.g. itching, skin_rash, fatigue..." value="{{ symptoms or '' }}" required>
                     </div>
                     <button type="button" id="micBtn" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 15px;" title="Voice input">
                         <i class="fas fa-microphone" id="micIcon"></i>
                     </button>
                 </div>
-                <div class="form-hint">Separate multiple symptoms with commas</div>
+                <div class="form-hint" style="font-size: 11.5px; color: var(--text-muted); margin-top: 5px;">Separate symptoms with commas</div>
             </div>
 
             {% if message %}
-            <div style="background: var(--error-light); border: 1px solid var(--error-border); border-radius: var(--radius-md); padding: 10px 14px; font-size: 13px; color: var(--error); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: var(--radius-md); padding: 12px 14px; font-size: 13px; color: #F87171; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
                 <i class="fas fa-exclamation-circle"></i> {{ message }}
             </div>
             {% endif %}
 
-            <button type="submit" class="btn btn-primary btn-block btn-lg" id="predictBtn" style="margin-top: 8px;">
+            <button type="submit" class="btn btn-primary btn-block btn-lg" id="predictBtn" style="margin-top: 8px; width: 100%;">
                 <i class="fas fa-brain"></i> Analyze Symptoms
             </button>
         </form>
 
         <!-- Common symptoms quick select -->
-        <div style="margin-top: 24px; padding-top: 20px; border-top: var(--border);">
-            <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); margin-bottom: 10px;">Common Symptoms</div>
-            <div>
-                {% set common = ['Headache', 'Fever', 'Fatigue', 'Cough', 'Nausea', 'Chest pain', 'Dizziness', 'Sore throat'] %}
+        <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 10px;">Quick Symptom Tags</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                {% set common = ['itching', 'skin_rash', 'fatigue', 'headache', 'fever', 'chills', 'joint_pain', 'cough', 'nausea'] %}
                 {% for sym in common %}
                 <button type="button" class="symptom-tag" onclick="addSymptom('{{ sym }}')">
-                    {{ sym }}
+                    + {{ sym.replace('_', ' ').title() }}
                 </button>
                 {% endfor %}
             </div>
         </div>
 
-        <div style="margin-top: 24px; padding: 14px; background: var(--warning-light); border: 1px solid var(--warning-border); border-radius: var(--radius-md);">
-            <div style="font-size: 12px; font-weight: 600; color: var(--warning); display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                <i class="fas fa-exclamation-triangle"></i> Medical Disclaimer
+        <div style="margin-top: 24px; padding: 14px 16px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: var(--radius-md);">
+            <div style="font-size: 12px; font-weight: 700; color: #FBBF24; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                <i class="fas fa-shield-halved"></i> Clinical AI Notice
             </div>
-            <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">This AI tool provides general health information only. Always consult a qualified healthcare professional for medical advice.</div>
+            <div style="font-size: 12px; color: #94A3B8; line-height: 1.5;">This diagnostic report is generated by trained statistical models for clinical reference. Always verify with a licensed practitioner.</div>
         </div>
     </div>
 
@@ -124,117 +325,159 @@
     <div class="consultant-results-panel">
         {% if predictions %}
             {% for pred in predictions %}
-            <div style="margin-bottom: 32px;">
+            <div style="margin-bottom: 36px;">
                 <!-- Result Header -->
                 <div class="result-header">
-                    <div class="result-diagnosis-badge">
-                        <i class="fas fa-diagnoses"></i>
-                    </div>
-                    <div style="flex: 1;">
-                        <div class="result-disease-name">{{ pred.predicted_disease }}</div>
-                        <div class="result-patient-meta">
-                            <span><i class="fas fa-user"></i> {{ name }}</span>
-                            <span><i class="fas fa-birthday-cake"></i> {{ age }} years</span>
-                            <span><i class="fas fa-map-marker-alt"></i> {{ location }}</span>
-                            <span><i class="fas fa-stethoscope"></i> {{ symptoms }}</span>
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div class="result-diagnosis-badge">
+                            <i class="fas fa-virus-covid"></i>
+                        </div>
+                        <div>
+                            <div class="result-disease-name">{{ pred.predicted_disease }}</div>
+                            <div class="result-patient-meta">
+                                <span><i class="fas fa-user"></i> {{ name }}</span>
+                                <span><i class="fas fa-birthday-cake"></i> {{ age }} yrs</span>
+                                <span><i class="fas fa-map-marker-alt"></i> {{ location }}</span>
+                                <span><i class="fas fa-stethoscope"></i> {{ symptoms }}</span>
+                            </div>
                         </div>
                     </div>
-                    <span class="badge badge-error">Predicted</span>
+                    <div style="text-align: right;">
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 12.5px; padding: 6px 14px; border-radius: 999px; font-weight: 700;">
+                            <i class="fas fa-check-circle"></i> AI Diagnosed
+                        </span>
+                    </div>
                 </div>
 
-                <!-- Result Sections Grid -->
+                <!-- Description Banner -->
+                {% if pred.dis_des %}
+                <div class="result-about-box">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                        <div style="width: 24px; height: 24px; border-radius: 6px; background: rgba(14, 165, 233, 0.15); color: #38BDF8; display: flex; align-items: center; justify-content: center; font-size: 12px;"><i class="fas fa-info-circle"></i></div>
+                        <span style="font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 15px; color: #FFFFFF;">About This Condition</span>
+                    </div>
+                    <div style="font-size: 14px; color: #CBD5E1; line-height: 1.7;">{{ pred.dis_des }}</div>
+                </div>
+                {% endif %}
+
+                <!-- Result Sections Grid (2x2 Balanced Layout) -->
                 <div class="result-sections">
-                    <!-- Description -->
-                    {% if pred.dis_des %}
+                    <!-- 1. Medications -->
                     <div class="result-section">
                         <div class="result-section-header">
-                            <div class="result-section-icon" style="background: var(--accent-light); color: var(--accent);"><i class="fas fa-info-circle"></i></div>
-                            <div class="result-section-title">About This Condition</div>
+                            <div class="result-section-icon" style="background: rgba(139, 92, 246, 0.15); color: #A78BFA;"><i class="fas fa-pills"></i></div>
+                            <div class="result-section-title">Recommended Medications</div>
                         </div>
                         <div class="result-section-body">
-                            <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.7;">{{ pred.dis_des }}</div>
+                            {% if pred.medications and pred.medications|length > 0 %}
+                            <div class="med-chip-wrap">
+                                {% for m in pred.medications %}
+                                <div class="med-chip">
+                                    <div class="med-name">
+                                        <i class="fas fa-tablets" style="color: #A78BFA; font-size: 12px;"></i>
+                                        <span>{{ m }}</span>
+                                    </div>
+                                    <a href="{{ url_for('medicine_search') }}?q={{ m }}" class="med-btn">
+                                        <i class="fas fa-tags"></i> Compare Price
+                                    </a>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div style="font-size: 13px; color: var(--text-muted);">Consult a physician for specific pharmaceutical prescriptions.</div>
+                            {% endif %}
                         </div>
                     </div>
-                    {% endif %}
 
-                    <!-- Precautions -->
-                    {% if pred.precautions %}
+                    <!-- 2. Precautions -->
                     <div class="result-section">
                         <div class="result-section-header">
-                            <div class="result-section-icon" style="background: var(--warning-light); color: var(--warning);"><i class="fas fa-shield-alt"></i></div>
-                            <div class="result-section-title">Precautions</div>
+                            <div class="result-section-icon" style="background: rgba(245, 158, 11, 0.15); color: #FBBF24;"><i class="fas fa-shield-halved"></i></div>
+                            <div class="result-section-title">Clinical Precautions</div>
                         </div>
                         <div class="result-section-body">
-                            {% for p in pred.precautions %}
-                            <div class="result-item">{{ p }}</div>
-                            {% endfor %}
+                            {% if pred.precautions and pred.precautions|length > 0 %}
+                            <ul class="result-list">
+                                {% for p in pred.precautions %}
+                                <li class="result-list-item">
+                                    <i class="fas fa-check-circle" style="color: #FBBF24;"></i>
+                                    <span>{{ p }}</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <div style="font-size: 13px; color: var(--text-muted);">Maintain standard hygiene and follow clinical care routines.</div>
+                            {% endif %}
                         </div>
                     </div>
-                    {% endif %}
 
-                    <!-- Medications -->
-                    {% if pred.medications %}
+                    <!-- 3. Diet Recommendations -->
                     <div class="result-section">
                         <div class="result-section-header">
-                            <div class="result-section-icon" style="background: #F5F3FF; color: #7C3AED;"><i class="fas fa-pills"></i></div>
-                            <div class="result-section-title">Medications</div>
+                            <div class="result-section-icon" style="background: rgba(16, 185, 129, 0.15); color: #34D399;"><i class="fas fa-apple-whole"></i></div>
+                            <div class="result-section-title">Diet &amp; Nutrition Guidelines</div>
                         </div>
                         <div class="result-section-body">
-                            {% for m in pred.medications %}
-                            <div class="result-item">{{ m }}</div>
-                            {% endfor %}
+                            {% if pred.diets and pred.diets|length > 0 %}
+                            <ul class="result-list">
+                                {% for d in pred.diets %}
+                                <li class="result-list-item">
+                                    <i class="fas fa-leaf" style="color: #34D399;"></i>
+                                    <span>{{ d }}</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <div style="font-size: 13px; color: var(--text-muted);">Stay well hydrated and maintain balanced nutrient intake.</div>
+                            {% endif %}
                         </div>
                     </div>
-                    {% endif %}
 
-                    <!-- Diet -->
-                    {% if pred.diets %}
+                    <!-- 4. Activity & Workout -->
                     <div class="result-section">
                         <div class="result-section-header">
-                            <div class="result-section-icon" style="background: var(--success-light); color: var(--success);"><i class="fas fa-apple-alt"></i></div>
-                            <div class="result-section-title">Diet Recommendations</div>
+                            <div class="result-section-icon" style="background: rgba(14, 165, 233, 0.15); color: #38BDF8;"><i class="fas fa-person-running"></i></div>
+                            <div class="result-section-title">Activity &amp; Lifestyle Guidance</div>
                         </div>
                         <div class="result-section-body">
-                            {% for d in pred.diets %}
-                            <div class="result-item">{{ d }}</div>
-                            {% endfor %}
+                            {% if pred.workout and pred.workout|length > 0 %}
+                            <ul class="result-list">
+                                {% for w in pred.workout %}
+                                <li class="result-list-item">
+                                    <i class="fas fa-circle-check" style="color: #38BDF8;"></i>
+                                    <span>{{ w }}</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <div style="font-size: 13px; color: var(--text-muted);">Engage in light physical activity with adequate rest periods.</div>
+                            {% endif %}
                         </div>
                     </div>
-                    {% endif %}
-
-                    <!-- Workout -->
-                    {% if pred.workout %}
-                    <div class="result-section">
-                        <div class="result-section-header">
-                            <div class="result-section-icon" style="background: #FFF7ED; color: #EA580C;"><i class="fas fa-running"></i></div>
-                            <div class="result-section-title">Activity &amp; Workout</div>
-                        </div>
-                        <div class="result-section-body">
-                            {% for w in pred.workout %}
-                            <div class="result-item">{{ w }}</div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endif %}
                 </div>
 
-                <!-- CTA -->
-                <div style="display: flex; gap: 10px; margin-top: 16px;">
-                    <a href="{{ url_for('doctor_consultation') }}" class="btn btn-primary">
-                        <i class="fas fa-user-md"></i> Consult a Doctor
+                <!-- Action Toolbar -->
+                <div style="display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap;">
+                    <a href="{{ url_for('doctor_consultation') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-user-md"></i> Book Doctor Consultation
                     </a>
-                    <button class="btn btn-secondary" onclick="window.print()">
-                        <i class="fas fa-print"></i> Print Report
+                    <a href="{{ url_for('medicine_search') }}" class="btn btn-secondary btn-lg">
+                        <i class="fas fa-pills"></i> Search Medicine Store
+                    </a>
+                    <button class="btn btn-secondary btn-lg" onclick="window.print()">
+                        <i class="fas fa-print"></i> Print Assessment Report
                     </button>
                 </div>
             </div>
             {% endfor %}
         {% else %}
         <div class="no-results">
-            <div class="empty-state">
-                <div class="empty-state-icon"><i class="fas fa-stethoscope"></i></div>
-                <div class="empty-state-title">No analysis yet</div>
-                <div class="empty-state-desc">Fill in your details and symptoms on the left, then click "Analyze Symptoms" to receive AI-powered health insights.</div>
+            <div class="empty-state" style="text-align: center; max-width: 440px; padding: 48px 24px;">
+                <div style="width: 68px; height: 68px; border-radius: 20px; background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.25); display: inline-flex; align-items: center; justify-content: center; font-size: 28px; color: #38BDF8; margin-bottom: 20px;">
+                    <i class="fas fa-stethoscope"></i>
+                </div>
+                <div style="font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 700; color: #FFFFFF; margin-bottom: 8px;">Ready for Symptom Assessment</div>
+                <div style="font-size: 13.5px; color: #94A3B8; line-height: 1.6;">Enter the patient details and reported symptoms on the left panel, then click <strong>"Analyze Symptoms"</strong> to generate full AI diagnostic insights, drug suggestions, and diet recommendations.</div>
             </div>
         </div>
         {% endif %}
