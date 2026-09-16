@@ -848,23 +848,60 @@
     font-weight: 600;
 }
 
+.rx-view-toggle-group {
+    display: inline-flex;
+    align-items: center;
+    background: var(--surface-1, #F4F5F7);
+    padding: 4px;
+    border-radius: var(--radius-pill, 9999px);
+    border: 1px solid var(--surface-2, #EAECEF);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
 .rx-view-toggle {
-    padding: 6px 14px;
-    border-radius: var(--radius-full);
-    font-size: 12px;
-    font-weight: 700;
-    border: 1px solid var(--border-color);
-    background: var(--surface-1);
-    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 16px;
+    border-radius: var(--radius-pill, 9999px);
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: inherit;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted, #6B7280);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all var(--transition, 180ms ease);
+    outline: none;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.rx-view-toggle i {
+    font-size: 13px;
+    color: var(--text-muted, #9CA3AF);
+    transition: color var(--transition-fast, 100ms ease);
+}
+
+.rx-view-toggle:hover {
+    color: var(--text-primary, #111827);
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.rx-view-toggle:hover i {
+    color: var(--text-primary, #111827);
 }
 
 .rx-view-toggle.active {
-    background: var(--accent);
-    color: white;
-    border-color: var(--accent);
-    box-shadow: 0 1px 3px rgba(27, 108, 168, 0.25);
+    background: var(--accent, #1B6CA8);
+    color: #FFFFFF !important;
+    font-weight: 700;
+    border-color: var(--accent, #1B6CA8);
+    box-shadow: 0 2px 8px rgba(27, 108, 168, 0.35);
+}
+
+.rx-view-toggle.active i {
+    color: #FFFFFF !important;
 }
 
 /* Responsive */
@@ -1506,7 +1543,7 @@
                     </div>
 
                     {% if text %}
-                    <div style="display: flex; gap: 6px; align-items: center;">
+                    <div class="rx-view-toggle-group">
                         <button type="button" class="rx-view-toggle active" id="btnOcrFormView" onclick="toggleOcrView('form')">
                             <i class="fas fa-file-medical"></i> Form Format
                         </button>
