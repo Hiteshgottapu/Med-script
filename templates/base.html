@@ -98,7 +98,6 @@
 <div class="auth-fullscreen-shell">
     <header class="auth-fullscreen-topbar">
         <a href="{{ url_for('landing') }}" class="auth-fullscreen-brand">
-            <div class="sidebar-logo-mark"><i class="fas fa-heart-pulse"></i></div>
             <div class="auth-fullscreen-brand-text">MedScript <span class="badge-pro">PRO</span></div>
         </a>
         <a href="{{ url_for('landing') }}" class="auth-fullscreen-back">
@@ -111,9 +110,8 @@
 
     <!-- ===== SIDEBAR ===== -->
     <aside class="sidebar" id="appSidebar">
-        <!-- Logo -->
+        <!-- Brand Header -->
         <div class="sidebar-logo" onclick="window.location.href='{{ url_for('index') }}'">
-            <div class="sidebar-logo-mark"><i class="fas fa-heart-pulse"></i></div>
             <div>
                 <div class="sidebar-logo-text">MedScript <span class="badge-pro">PRO</span></div>
                 <span class="sidebar-logo-tagline">Clinical Workspace</span>
@@ -224,11 +222,6 @@
                     <span>MedScript</span>
                     <span class="crumb-sep"><i class="fas fa-chevron-right" style="font-size:10px;"></i></span>
                     <span class="crumb-current">{% block page_title %}Dashboard{% endblock %}</span>
-                </div>
-                <!-- Live Clinical Status Pill -->
-                <div class="topbar-live-status">
-                    <span class="pulse-dot"></span>
-                    <span>Live Clinical Sync &bull; 3 Sources Active</span>
                 </div>
             </div>
             <div class="topbar-right">
