@@ -71,6 +71,11 @@ def create_app(config_name=None):
     # Preserves 100% compatibility with base.html & index.html url_for('<name>')
     endpoint_aliases = [
         ('/', 'index', 'main.index', ['GET']),
+        ('/health', 'health_check', 'main.health_check', ['GET']),
+        ('/landing', 'landing', 'main.landing', ['GET']),
+        ('/features', 'features', 'main.features', ['GET']),
+        ('/contact', 'contact', 'main.contact', ['GET']),
+        ('/developers', 'developers', 'main.developers', ['GET']),
         ('/login', 'login', 'auth.login', ['GET', 'POST']),
         ('/signup', 'signup', 'auth.signup', ['GET', 'POST']),
         ('/logout', 'logout', 'auth.logout', ['GET']),

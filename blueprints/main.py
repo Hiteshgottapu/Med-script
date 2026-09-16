@@ -132,9 +132,16 @@ def index():
     return render_template("index.html", stats=stats)
 
 
+@main_bp.route("/landing", methods=["GET"])
+def landing():
+    """Renders the comprehensive public marketing & feature landing page."""
+    return render_template("landing.html")
+
+
 @main_bp.route("/features", methods=["GET"])
 def features():
-    return render_template("features.html")
+    """Renders the feature showcase on the landing page."""
+    return render_template("landing.html")
 
 
 @main_bp.route("/contact", methods=["GET"])

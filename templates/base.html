@@ -84,11 +84,16 @@
                 <span class="nav-label">Emergency</span>
             </a>
 
-            <div class="sidebar-section-label">Account</div>
+            <div class="sidebar-section-label">Account & Overview</div>
 
             <a href="{{ url_for('profile') }}" class="sidebar-nav-item {% if request.endpoint in ['profile', 'settings'] %}active{% endif %}" title="Settings & Profile">
                 <span class="nav-icon"><i class="fas fa-cog"></i></span>
                 <span class="nav-label">Settings & Profile</span>
+            </a>
+
+            <a href="{{ url_for('landing') }}" class="sidebar-nav-item {% if request.endpoint == 'landing' %}active{% endif %}" title="Product Landing Page">
+                <span class="nav-icon"><i class="fas fa-compass"></i></span>
+                <span class="nav-label">Product Landing Page</span>
             </a>
         </nav>
 

@@ -20,11 +20,13 @@
         Medicine Search & Procurement Engine
       </h1>
       <p class="med-header-subtitle">
-        Search live medicine formulations, compare side-by-side pharmacy pricing, verify Schedule H prescriptions, and execute concierge orders.
+        Search live medicine formulations, compare side-by-side pharmacy pricing, verify Schedule H prescriptions, and
+        execute concierge orders.
       </p>
       <div class="med-hero-stats">
         <span class="hero-stat-pill"><i class="fas fa-bolt" style="color: #10b981;"></i> PharmEasy Live Sync</span>
-        <span class="hero-stat-pill"><i class="fas fa-shield-check" style="color: #0284c7;"></i> Schedule H Compliance</span>
+        <span class="hero-stat-pill"><i class="fas fa-shield-check" style="color: #0284c7;"></i> Schedule H
+          Compliance</span>
         <span class="hero-stat-pill"><i class="fas fa-truck" style="color: #8b5cf6;"></i> Free Delivery &gt; ₹500</span>
       </div>
     </div>
@@ -48,14 +50,9 @@
       <div class="search-input-group">
         <div class="search-input-wrapper">
           <i class="fas fa-search search-icon"></i>
-          <input
-            type="text"
-            id="searchInput"
-            class="search-input"
+          <input type="text" id="searchInput" class="search-input"
             placeholder="Search medicine by brand or generic name (e.g. Paracetamol, Dolo 650, Amoxicillin, Azithromycin)..."
-            value="{{ medicine_name or '' }}"
-            autocomplete="off"
-          />
+            value="{{ medicine_name or '' }}" autocomplete="off" />
           <button type="button" id="clearSearchBtn" class="search-clear-btn" onclick="clearSearch()">
             <i class="fas fa-times"></i>
           </button>
@@ -72,11 +69,13 @@
 
       <!-- Quick Suggestion Tags -->
       <div class="quick-tags">
-        <span class="quick-tags-label"><i class="fas fa-bolt" style="color: #eab308; margin-right: 4px;"></i>Quick:</span>
+        <span class="quick-tags-label"><i class="fas fa-bolt"
+            style="color: #eab308; margin-right: 4px;"></i>Quick:</span>
         <button type="button" class="quick-tag-chip" onclick="triggerSearch('Paracetamol')">Paracetamol</button>
         <button type="button" class="quick-tag-chip" onclick="triggerSearch('Dolo 650')">Dolo 650</button>
         <button type="button" class="quick-tag-chip" onclick="triggerSearch('Amoxicillin')">Amoxicillin</button>
-        <button type="button" class="quick-tag-chip" onclick="triggerSearch('Azithromycin 500')">Azithromycin 500</button>
+        <button type="button" class="quick-tag-chip" onclick="triggerSearch('Azithromycin 500')">Azithromycin
+          500</button>
         <button type="button" class="quick-tag-chip" onclick="triggerSearch('Metformin 500')">Metformin 500</button>
         <button type="button" class="quick-tag-chip" onclick="triggerSearch('Cetirizine')">Cetirizine</button>
       </div>
@@ -133,11 +132,13 @@
 
       <!-- View Switcher (Grid vs List) -->
       <div class="view-switcher-group">
-        <button type="button" id="viewToggleGrid" class="view-toggle-btn active" title="Card Grid View" onclick="setViewMode('grid')">
+        <button type="button" id="viewToggleGrid" class="view-toggle-btn active" title="Card Grid View"
+          onclick="setViewMode('grid')">
           <i class="fas fa-th-large"></i>
           <span>Grid</span>
         </button>
-        <button type="button" id="viewToggleList" class="view-toggle-btn" title="Dense List View" onclick="setViewMode('list')">
+        <button type="button" id="viewToggleList" class="view-toggle-btn" title="Dense List View"
+          onclick="setViewMode('list')">
           <i class="fas fa-list"></i>
           <span>List</span>
         </button>
@@ -159,8 +160,10 @@
         <i class="fas fa-notes-medical"></i>
       </div>
       <div class="state-title">Search for a medicine to begin</div>
-      <div class="state-desc" style="color: #64748b; max-width: 480px; margin: 0 auto 20px; line-height: 1.6; font-size: 14px;">
-        Enter an active brand name, generic composition, or strength above to retrieve clean, normalized information and price comparisons across verified clinical databases and pharmacies.
+      <div class="state-desc"
+        style="color: #64748b; max-width: 480px; margin: 0 auto 20px; line-height: 1.6; font-size: 14px;">
+        Enter an active brand name, generic composition, or strength above to retrieve clean, normalized information and
+        price comparisons across verified clinical databases and pharmacies.
       </div>
       <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
         <button class="btn btn-secondary btn-sm" onclick="triggerSearch('Paracetamol 650')">Try Paracetamol 650</button>
@@ -198,7 +201,8 @@
       <div class="state-desc" style="color: #64748b; font-size: 14px; margin-bottom: 18px;">
         We could not find any medicines matching "<span id="emptyQueryText"></span>".
       </div>
-      <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 16px; max-width: 400px; margin: 0 auto; text-align: left; font-size: 13px; color: #475569;">
+      <div
+        style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 16px; max-width: 400px; margin: 0 auto; text-align: left; font-size: 13px; color: #475569;">
         <strong>Helpful Suggestions:</strong>
         <ul style="margin: 8px 0 0 18px; padding: 0;">
           <li>Check for typographical or spelling errors</li>
@@ -255,7 +259,8 @@
     <div id="cartRxNotice" style="display: none;" class="cart-rx-banner">
       <i class="fas fa-file-prescription cart-rx-icon"></i>
       <div>
-        <strong>Schedule H Drug Attached:</strong> One or more items in your cart mandate an authorized clinical prescription. You can upload or attach it during checkout.
+        <strong>Schedule H Drug Attached:</strong> One or more items in your cart mandate an authorized clinical
+        prescription. You can upload or attach it during checkout.
       </div>
     </div>
 
@@ -319,49 +324,66 @@
     <div class="modal-body">
       <form id="checkoutForm" onsubmit="handleCheckoutSubmit(event)">
         <h4 style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">1. Delivery Destination</h4>
-        
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
           <div>
-            <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Recipient Name *</label>
-            <input type="text" id="shipName" required class="search-input" style="height: 40px; font-size: 13px;" placeholder="Full Name" />
+            <label
+              style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Recipient
+              Name *</label>
+            <input type="text" id="shipName" required class="search-input" style="height: 40px; font-size: 13px;"
+              placeholder="Full Name" />
           </div>
           <div>
-            <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Phone Number (+91) *</label>
-            <input type="tel" id="shipPhone" required class="search-input" style="height: 40px; font-size: 13px;" placeholder="10-digit mobile" />
+            <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Phone
+              Number (+91) *</label>
+            <input type="tel" id="shipPhone" required class="search-input" style="height: 40px; font-size: 13px;"
+              placeholder="10-digit mobile" />
           </div>
         </div>
 
         <div style="margin-bottom: 12px;">
-          <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Street Address / Apartment *</label>
-          <input type="text" id="shipStreet" required class="search-input" style="height: 40px; font-size: 13px;" placeholder="Flat / House No., Building, Street" />
+          <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Street
+            Address / Apartment *</label>
+          <input type="text" id="shipStreet" required class="search-input" style="height: 40px; font-size: 13px;"
+            placeholder="Flat / House No., Building, Street" />
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px;">
           <div>
-            <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">City *</label>
-            <input type="text" id="shipCity" required class="search-input" style="height: 40px; font-size: 13px;" placeholder="e.g. Hyderabad" />
+            <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">City
+              *</label>
+            <input type="text" id="shipCity" required class="search-input" style="height: 40px; font-size: 13px;"
+              placeholder="e.g. Hyderabad" />
           </div>
           <div>
-            <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">State *</label>
-            <input type="text" id="shipState" required class="search-input" style="height: 40px; font-size: 13px;" value="Telangana" />
+            <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">State
+              *</label>
+            <input type="text" id="shipState" required class="search-input" style="height: 40px; font-size: 13px;"
+              value="Telangana" />
           </div>
           <div>
-            <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">PIN Code *</label>
-            <input type="text" id="shipPincode" required class="search-input" style="height: 40px; font-size: 13px;" placeholder="6-digit PIN" />
+            <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">PIN
+              Code *</label>
+            <input type="text" id="shipPincode" required class="search-input" style="height: 40px; font-size: 13px;"
+              placeholder="6-digit PIN" />
           </div>
         </div>
 
         <!-- Prescription Upload Section (Required for Schedule H Drugs) -->
-        <div id="checkoutRxSection" style="display: none; background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 10px; padding: 14px; margin-bottom: 20px;">
-          <div style="font-size: 13px; font-weight: 700; color: #92400e; display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+        <div id="checkoutRxSection"
+          style="display: none; background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 10px; padding: 14px; margin-bottom: 20px;">
+          <div
+            style="font-size: 13px; font-weight: 700; color: #92400e; display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
             <i class="fas fa-file-prescription" style="color: #d97706; font-size: 16px;"></i>
             <span>Doctor's Prescription Verification (Schedule H Required)</span>
           </div>
           <p style="font-size: 12px; color: #78350f; margin-bottom: 10px; line-height: 1.4;">
-            Your cart contains Schedule H medicines requiring a verified clinical prescription under Indian pharmacy regulations.
+            Your cart contains Schedule H medicines requiring a verified clinical prescription under Indian pharmacy
+            regulations.
           </p>
           <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <input type="file" id="prescriptionFileInput" accept=".pdf,.png,.jpg,.jpeg,.webp" style="font-size: 12px; max-width: 250px;" />
+            <input type="file" id="prescriptionFileInput" accept=".pdf,.png,.jpg,.jpeg,.webp"
+              style="font-size: 12px; max-width: 250px;" />
             <button type="button" class="btn btn-secondary btn-sm" id="uploadRxBtn" onclick="uploadPrescriptionFile()">
               <i class="fas fa-upload"></i> Upload & Attach
             </button>
@@ -373,17 +395,20 @@
 
         <h4 style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">2. Payment Method</h4>
         <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
-          <label style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600;">
+          <label
+            style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600;">
             <input type="radio" name="payMethod" value="Cash on Delivery" checked />
             <i class="fas fa-money-bill-wave" style="color: #059669;"></i>
             <span>Cash on Delivery (Pay upon delivery)</span>
           </label>
-          <label style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600;">
+          <label
+            style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600;">
             <input type="radio" name="payMethod" value="UPI" />
             <i class="fas fa-qrcode" style="color: #2563eb;"></i>
             <span>UPI / QR (Google Pay, PhonePe, Paytm)</span>
           </label>
-          <label style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600;">
+          <label
+            style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600;">
             <input type="radio" name="payMethod" value="Credit/Debit Card" />
             <i class="fas fa-credit-card" style="color: #7c3aed;"></i>
             <span>Credit / Debit Card</span>
@@ -405,4 +430,4 @@
   window.MEDSCRIPT_INITIAL_QUERY = {{ (medicine_name or '') | tojson }};
 </script>
 <script src="{{ url_for('static', filename='medicine_search.js') }}"></script>
-{% endblock %}
+{% endblock

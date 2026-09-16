@@ -22,8 +22,8 @@ def test_security_headers_and_request_id(client):
 
 
 def test_public_pages(client):
-    """Ensure index, features, contact, developers render HTTP 200."""
-    for path in ["/", "/features", "/contact", "/developers"]:
+    """Ensure index, landing, features, contact, developers render HTTP 200."""
+    for path in ["/", "/landing", "/features", "/contact", "/developers"]:
         res = client.get(path)
         assert res.status_code == 200
 

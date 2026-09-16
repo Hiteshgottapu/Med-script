@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedScript — Enterprise AI Clinical Intelligence & Medicine Commerce Platform</title>
+    <meta name="description" content="MedScript is an enterprise AI-powered clinical intelligence platform featuring Vision OCR prescription digitization, ML symptom-to-disease prediction, multi-source pharmacy price comparison, and 24/7 Gemini 3.7 Flash medical copilot.">
+
+    <!-- Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-dark: #090D16;
+            --bg-dark-card: rgba(17, 24, 39, 0.75);
+            --bg-dark-border: rgba(255, 255, 255, 0.08);
+            --accent-blue: #1B6CA8;
+            --accent-cyan: #0EA5E9;
+            --accent-teal: #0D9488;
+            --accent-green: #10B981;
+            --accent-purple: #8B5CF6;
+            --accent-amber: #F59E0B;
+            --text-main: #F9FAFB;
+            --text-secondary: #9CA3AF;
+            --text-muted: #6B7280;
+            --gradient-hero: linear-gradient(135deg, #0EA5E9 0%, #0D9488 50%, #2563EB 100%);
+            --gradient-card: linear-gradient(180deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --radius-xl: 28px;
+            --radius-pill: 9999px;
+            --shadow-glow: 0 0 50px rgba(14, 165, 233, 0.15);
+            --shadow-card: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 15px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: "Plus Jakarta Sans", sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.65;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Ambient Background Lighting */
+        .ambient-glow {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100vw;
+            height: 100vh;
+            max-width: 1400px;
+            background: radial-gradient(circle at 50% 10%, rgba(14, 165, 233, 0.18) 0%, rgba(13, 148, 136, 0.12) 30%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .ambient-glow-2 {
+            position: absolute;
+            top: 1400px;
+            right: 0;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .ambient-glow-3 {
+            position: absolute;
+            top: 2800px;
+            left: 0;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.10) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Container */
+        .container {
+            width: 100%;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* NAVBAR */
+        .nav-header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            background: rgba(9, 13, 22, 0.82);
+            border-bottom: 1px solid var(--bg-dark-border);
+            transition: all 0.3s ease;
+        }
+
+        .nav-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 72px;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-main);
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, #0EA5E9 0%, #0D9488 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            box-shadow: 0 4px 16px rgba(14, 165, 233, 0.4);
+        }
+
+        .brand-name {
+            font-family: "Outfit", sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-badge {
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #0EA5E9, #0D9488);
+            color: white;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: color 0.2s ease, transform 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-links a:hover {
+            color: #FFFFFF;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        /* BUTTONS */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0EA5E9 0%, #0D9488 100%);
+            color: #FFFFFF;
+            box-shadow: 0 4px 20px rgba(14, 165, 233, 0.35);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 28px rgba(14, 165, 233, 0.55);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-main);
+            border-color: var(--bg-dark-border);
+            backdrop-filter: blur(8px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-outline-glow {
+            background: transparent;
+            color: #38BDF8;
+            border-color: rgba(56, 189, 248, 0.4);
+        }
+
+        .btn-outline-glow:hover {
+            background: rgba(56, 189, 248, 0.1);
+            border-color: #38BDF8;
+            transform: translateY(-2px);
+        }
+
+        .btn-lg {
+            padding: 14px 28px;
+            font-size: 15.5px;
+            border-radius: var(--radius-lg);
+        }
+
+        /* HERO SECTION */
+        .hero-section {
+            padding: 80px 0 60px;
+            text-align: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: var(--radius-pill);
+            background: rgba(14, 165, 233, 0.1);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            color: #38BDF8;
+            font-size: 12.5px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10B981;
+            box-shadow: 0 0 10px #10B981;
+            animation: pulse 1.8s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        .hero-title {
+            font-family: "Outfit", sans-serif;
+            font-size: 54px;
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -1.2px;
+            max-width: 960px;
+            margin: 0 auto 20px;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #38BDF8 0%, #2DD4BF 50%, #818CF8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+            max-width: 780px;
+            margin: 0 auto 36px;
+            line-height: 1.65;
+            font-weight: 400;
+        }
+
+        .hero-actions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 50px;
+        }
+
+        .hero-stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            max-width: 1040px;
+            margin: 0 auto 60px;
+            padding: 24px;
+            background: var(--bg-dark-card);
+            border: 1px solid var(--bg-dark-border);
+            border-radius: var(--radius-xl);
+            backdrop-filter: blur(12px);
+        }
+
+        .hero-stat-item {
+            text-align: center;
+            border-right: 1px solid var(--bg-dark-border);
+        }
+
+        .hero-stat-item:last-child {
+            border-right: none;
+        }
+
+        .hero-stat-val {
+            font-family: "Outfit", sans-serif;
+            font-size: 32px;
+            font-weight: 800;
+            color: #FFFFFF;
+            letter-spacing: -0.5px;
+        }
+
+        .hero-stat-label {
+            font-size: 12.5px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        /* HERO INTERACTIVE MOCKUP SHOWCASE */
+        .mockup-wrapper {
+            position: relative;
+            max-width: 1120px;
+            margin: 0 auto 100px;
+            border-radius: var(--radius-xl);
+            padding: 8px;
+            background: linear-gradient(180deg, rgba(56, 189, 248, 0.3) 0%, rgba(13, 148, 136, 0.1) 100%);
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), var(--shadow-glow);
+        }
+
+        .mockup-inner {
+            background: #0B1120;
+            border-radius: calc(var(--radius-xl) - 6px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 320px 1fr 340px;
+            gap: 0;
+            min-height: 440px;
+            text-align: left;
+        }
+
+        .mockup-col {
+            padding: 24px;
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .mockup-col:last-child {
+            border-right: none;
+        }
+
+        .mockup-header {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: #38BDF8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .mockup-card {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: transform 0.2s ease;
+        }
+
+        .mockup-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(56, 189, 248, 0.4);
+        }
+
+        .rx-badge {
+            align-self: flex-start;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34D399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        /* SECTION STYLES */
+        .section-wrap {
+            padding: 90px 0;
+            position: relative;
+        }
+
+        .section-tag {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: #0EA5E9;
+            margin-bottom: 12px;
+        }
+
+        .section-heading {
+            font-family: "Outfit", sans-serif;
+            font-size: 38px;
+            font-weight: 800;
+            letter-spacing: -0.8px;
+            color: #FFFFFF;
+            margin-bottom: 16px;
+            line-height: 1.2;
+        }
+
+        .section-desc {
+            font-size: 16.5px;
+            color: var(--text-secondary);
+            max-width: 680px;
+            line-height: 1.65;
+            margin-bottom: 50px;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+        .text-center .section-desc {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* 4 CORE PILLARS GRID */
+        .pillars-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 28px;
+        }
+
+        .pillar-card {
+            background: var(--bg-dark-card);
+            border: 1px solid var(--bg-dark-border);
+            border-radius: var(--radius-xl);
+            padding: 36px;
+            backdrop-filter: blur(12px);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .pillar-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(14, 165, 233, 0.4);
+            box-shadow: 0 16px 36px -10px rgba(14, 165, 233, 0.2);
+        }
+
+        .pillar-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #0EA5E9, transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .pillar-card:hover::before {
+            opacity: 1;
+        }
+
+        .pillar-icon-box {
+            width: 54px;
+            height: 54px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .icon-blue { background: rgba(14, 165, 233, 0.15); color: #38BDF8; }
+        .icon-teal { background: rgba(13, 148, 136, 0.15); color: #2DD4BF; }
+        .icon-purple { background: rgba(139, 92, 246, 0.15); color: #A78BFA; }
+        .icon-amber { background: rgba(245, 158, 11, 0.15); color: #FBBF24; }
+
+        .pillar-title {
+            font-family: "Outfit", sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+
+        .pillar-text {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.65;
+        }
+
+        .pillar-bullets {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .pillar-bullet {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 13.5px;
+            color: #D1D5DB;
+        }
+
+        .pillar-bullet i {
+            color: #10B981;
+            margin-top: 3px;
+            font-size: 12px;
+        }
+
+        /* 8 FEATURE CARDS MATRIX */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .feature-box {
+            background: rgba(17, 24, 39, 0.6);
+            border: 1px solid var(--bg-dark-border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            transition: all 0.25s ease;
+        }
+
+        .feature-box:hover {
+            background: rgba(30, 41, 59, 0.7);
+            border-color: rgba(56, 189, 248, 0.35);
+            transform: translateY(-3px);
+        }
+
+        .feature-icon-sm {
+            width: 42px;
+            height: 42px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .feature-box-title {
+            font-family: "Outfit", sans-serif;
+            font-size: 17px;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+
+        .feature-box-desc {
+            font-size: 13.5px;
+            color: var(--text-secondary);
+            line-height: 1.55;
+        }
+
+        /* HOW IT WORKS STEPS */
+        .steps-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 28px;
+            position: relative;
+        }
+
+        .step-card {
+            background: var(--bg-dark-card);
+            border: 1px solid var(--bg-dark-border);
+            border-radius: var(--radius-xl);
+            padding: 32px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .step-number {
+            font-family: "Outfit", sans-serif;
+            font-size: 40px;
+            font-weight: 900;
+            color: rgba(255, 255, 255, 0.08);
+            line-height: 1;
+            margin-bottom: -10px;
+        }
+
+        .step-icon-wrap {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            background: rgba(14, 165, 233, 0.15);
+            color: #38BDF8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .step-title {
+            font-family: "Outfit", sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+
+        .step-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* PHARMACY COMPARISON TABLE HIGHLIGHT */
+        .comparison-table-wrap {
+            background: var(--bg-dark-card);
+            border: 1px solid var(--bg-dark-border);
+            border-radius: var(--radius-xl);
+            padding: 28px;
+            backdrop-filter: blur(12px);
+            overflow-x: auto;
+        }
+
+        .comp-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .comp-table th {
+            padding: 14px 18px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .comp-table td {
+            padding: 16px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            color: #E5E7EB;
+        }
+
+        .comp-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .badge-best {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34D399;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        /* FAQ ACCORDION */
+        .faq-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1080px;
+            margin: 0 auto;
+        }
+
+        .faq-item {
+            background: var(--bg-dark-card);
+            border: 1px solid var(--bg-dark-border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .faq-q {
+            font-family: "Outfit", sans-serif;
+            font-size: 16.5px;
+            font-weight: 700;
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .faq-q i {
+            color: #0EA5E9;
+            font-size: 14px;
+        }
+
+        .faq-a {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* CTA BANNER */
+        .cta-banner {
+            background: radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.25) 0%, rgba(13, 148, 136, 0.15) 50%, rgba(9, 13, 22, 0.9) 100%), #111827;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: var(--radius-xl);
+            padding: 64px 36px;
+            text-align: center;
+            margin: 60px 0 100px;
+            box-shadow: 0 20px 60px -10px rgba(14, 165, 233, 0.2);
+        }
+
+        .cta-title {
+            font-family: "Outfit", sans-serif;
+            font-size: 40px;
+            font-weight: 800;
+            color: #FFFFFF;
+            letter-spacing: -0.8px;
+            margin-bottom: 16px;
+        }
+
+        .cta-text {
+            font-size: 17px;
+            color: #E2E8F0;
+            max-width: 620px;
+            margin: 0 auto 32px;
+            line-height: 1.6;
+        }
+
+        /* FOOTER */
+        .footer {
+            background: #060911;
+            border-top: 1px solid var(--bg-dark-border);
+            padding: 60px 0 30px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1.5fr;
+            gap: 40px;
+            margin-bottom: 48px;
+        }
+
+        .footer-brand p {
+            margin-top: 12px;
+            color: var(--text-secondary);
+            max-width: 320px;
+            line-height: 1.6;
+        }
+
+        .footer-col-title {
+            font-family: "Outfit", sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin-bottom: 16px;
+            letter-spacing: 0.2px;
+        }
+
+        .footer-links {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            list-style: none;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .footer-links a:hover {
+            color: #38BDF8;
+        }
+
+        .footer-bottom {
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1100px) {
+            .mockup-inner { grid-template-columns: 1fr; }
+            .hero-stats-row { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+            .pillars-grid { grid-template-columns: 1fr; }
+            .steps-container { grid-template-columns: 1fr; }
+            .faq-grid { grid-template-columns: 1fr; }
+            .footer-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .hero-title { font-size: 38px; }
+            .section-heading { font-size: 28px; }
+            .nav-links { display: none; }
+            .features-grid { grid-template-columns: 1fr; }
+            .hero-stats-row { grid-template-columns: 1fr; }
+            .hero-stat-item { border-right: none; border-bottom: 1px solid var(--bg-dark-border); padding-bottom: 14px; }
+            .hero-stat-item:last-child { border-bottom: none; }
+            .footer-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-glow"></div>
+    <div class="ambient-glow-2"></div>
+    <div class="ambient-glow-3"></div>
+
+    <!-- ===== NAVIGATION ===== -->
+    <header class="nav-header">
+        <div class="container">
+            <div class="nav-wrap">
+                <a href="{{ url_for('landing') }}" class="brand-logo">
+                    <div class="brand-icon"><i class="fas fa-heart-pulse"></i></div>
+                    <div class="brand-name">
+                        MedScript
+                        <span class="brand-badge">PRO v2.4</span>
+                    </div>
+                </a>
+
+                <ul class="nav-links">
+                    <li><a href="#what-it-does"><i class="fas fa-microchip"></i> Capabilities</a></li>
+                    <li><a href="#features"><i class="fas fa-layer-group"></i> All Features</a></li>
+                    <li><a href="#comparison"><i class="fas fa-pills"></i> Pharmacy Marketplace</a></li>
+                    <li><a href="#how-it-works"><i class="fas fa-project-diagram"></i> Workflow</a></li>
+                    <li><a href="#faq"><i class="fas fa-circle-question"></i> FAQ</a></li>
+                </ul>
+
+                <div class="nav-actions">
+                    {% if session.get('user') %}
+                    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                        <i class="fas fa-th-large"></i> Dashboard
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-secondary">
+                        Sign In
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('index') }}" class="btn btn-primary">
+                        Launch Workspace <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== HERO SECTION ===== -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="hero-badge">
+                <span class="pulse-dot"></span>
+                <span>Next-Gen Clinical AI & Unified Pharmacy Commerce Engine</span>
+            </div>
+
+            <h1 class="hero-title">
+                The Intelligent Operating System for <span class="gradient-text">Clinical Workflow & Medicine Discovery</span>
+            </h1>
+
+            <p class="hero-subtitle">
+                MedScript transforms handwritten prescriptions into structured digital health records with Multimodal Vision OCR, performs clinical symptom-disease inference with ML ensembles, compares live medicine prices across PharmEasy, OpenFDA & RxNorm, and delivers 24/7 AI copilot guidance powered by Google Gemini 3.7 Flash.
+            </p>
+
+            <div class="hero-actions">
+                <a href="{{ url_for('medscript') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-file-prescription"></i> Scan Prescription (Vision OCR)
+                </a>
+                <a href="{{ url_for('medicine_search') }}" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-pills"></i> Compare Medicine Prices
+                </a>
+                <a href="{{ url_for('ai_consultant') }}" class="btn btn-outline-glow btn-lg">
+                    <i class="fas fa-stethoscope"></i> AI Symptom Diagnosis
+                </a>
+            </div>
+
+            <!-- Trust Stats Row -->
+            <div class="hero-stats-row">
+                <div class="hero-stat-item">
+                    <div class="hero-stat-val">99.2%</div>
+                    <div class="hero-stat-label">Multimodal OCR Accuracy</div>
+                </div>
+                <div class="hero-stat-item">
+                    <div class="hero-stat-val">3+ Sources</div>
+                    <div class="hero-stat-label">Live Parallel Pharmacy APIs</div>
+                </div>
+                <div class="hero-stat-item">
+                    <div class="hero-stat-val">Gemini 3.7</div>
+                    <div class="hero-stat-label">Google Multimodal AI Copilot</div>
+                </div>
+                <div class="hero-stat-item">
+                    <div class="hero-stat-val">100% Compliant</div>
+                    <div class="hero-stat-label">Schedule H Rx Verification</div>
+                </div>
+            </div>
+
+            <!-- Interactive Mockup Showcase -->
+            <div class="mockup-wrapper">
+                <div class="mockup-inner">
+                    <!-- Column 1: OCR Extraction -->
+                    <div class="mockup-col">
+                        <div class="mockup-header">
+                            <i class="fas fa-magic"></i> Step 1: Vision OCR
+                        </div>
+                        <div class="mockup-card">
+                            <div style="font-size: 11px; color: var(--text-muted);">Raw Prescription Input</div>
+                            <div style="font-family: 'Brush Script MT', cursive, sans-serif; font-size: 19px; color: #94A3B8; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 4px;">
+                                Rx: Amoxicillin 500mg (1-0-1) x 5d post meals
+                            </div>
+                            <div style="font-size: 12px; font-weight: 600; color: #38BDF8; margin-top: 4px;">
+                                <i class="fas fa-check-circle"></i> Digitized Extraction
+                            </div>
+                            <div style="font-size: 12.5px; color: #E2E8F0;">
+                                <strong>Drug:</strong> Amoxicillin 500mg<br>
+                                <strong>Schedule:</strong> Twice Daily • 5 Days<br>
+                                <strong>Timing:</strong> After Food
+                            </div>
+                            <span class="rx-badge"><i class="fas fa-shield-alt"></i> Schedule H Verified</span>
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Live Multi-Pharmacy Price Compare -->
+                    <div class="mockup-col">
+                        <div class="mockup-header">
+                            <i class="fas fa-tags"></i> Step 2: Multi-Pharmacy Compare
+                        </div>
+                        <div class="mockup-card" style="border-color: rgba(14, 165, 233, 0.3);">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="font-weight: 700; font-size: 14px; color: white;">Dolo 650 Tablet (Strip of 15)</div>
+                                <span class="badge-best">Lowest Price</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; margin-top: 4px;">
+                                <div style="display: flex; justify-content: space-between; padding: 6px 8px; background: rgba(16, 185, 129, 0.1); border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.25);">
+                                    <span style="color: #34D399; font-weight: 600;"><i class="fas fa-bolt"></i> PharmEasy</span>
+                                    <span style="color: #34D399; font-weight: 700;">₹30.50 (15% OFF)</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 4px 8px; color: #94A3B8;">
+                                    <span>Tata 1mg</span>
+                                    <span>₹34.20</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 4px 8px; color: #94A3B8;">
+                                    <span>Netmeds</span>
+                                    <span>₹35.00</span>
+                                </div>
+                            </div>
+                            <a href="{{ url_for('medicine_search') }}" class="btn btn-primary" style="padding: 7px 12px; font-size: 12px; margin-top: 4px;">
+                                <i class="fas fa-cart-plus"></i> Add to MedScript Cart
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Column 3: AI Clinical Prediction -->
+                    <div class="mockup-col">
+                        <div class="mockup-header">
+                            <i class="fas fa-brain"></i> Step 3: Clinical AI Insights
+                        </div>
+                        <div class="mockup-card">
+                            <div style="font-size: 11px; color: var(--text-muted);">Symptom Ensemble Inference</div>
+                            <div style="font-size: 13.5px; font-weight: 700; color: #F59E0B;">
+                                <i class="fas fa-stethoscope"></i> Migraine with Aura
+                            </div>
+                            <div style="font-size: 12px; color: #94A3B8; line-height: 1.5;">
+                                High probability (94.6%). Detected photophobia, unilateral pulsing headache & visual scintillations.
+                            </div>
+                            <div style="padding: 6px 10px; background: rgba(255,255,255,0.04); border-radius: 6px; font-size: 11px; color: #D1D5DB;">
+                                <strong style="color: #38BDF8;">Advice:</strong> Rest in dark room, hydration, avoid tyramine-rich foods.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== WHAT MEDSCRIPT DOES (4 CORE PILLARS) ===== -->
+    <section class="section-wrap" id="what-it-does" style="background: rgba(11, 17, 32, 0.4);">
+        <div class="container">
+            <div class="text-center">
+                <span class="section-tag">Core Capabilities</span>
+                <h2 class="section-heading">What MedScript Does For Healthcare</h2>
+                <p class="section-desc">
+                    MedScript bridges the gap between doctor prescriptions, clinical diagnostic intelligence, and transparent pharmacy procurement into one cohesive platform.
+                </p>
+            </div>
+
+            <div class="pillars-grid">
+                <!-- Pillar 1 -->
+                <div class="pillar-card">
+                    <div class="pillar-icon-box icon-blue">
+                        <i class="fas fa-file-prescription"></i>
+                    </div>
+                    <div class="pillar-title">1. Multimodal Prescription Digitization</div>
+                    <p class="pillar-text">
+                        Upload raw clinic photos, handwritten scripts, or PDF reports. Our Google Cloud Vision Multimodal OCR engine automatically parses unstructured medical handwriting, maps medication names against clinical databases, and formats standard e-prescriptions.
+                    </p>
+                    <div class="pillar-bullets">
+                        <div class="pillar-bullet"><i class="fas fa-check"></i> <span>Extracts drug names, exact strengths, dosages & timing instructions</span></div>
+                        <div class="pillar-bullet"><i class="fas fa-check"></i> <span>Generates certified, printable PDF prescriptions with doctor signature blocks</span></div>
+                        <div class="pillar-bullet"><i class="fas fa-check"></i> <span>Automated handwriting spell-correction using medical dictionaries</span></div>
+                    </div>
+                </div>
+
+                <!-- Pillar 2 -->
+                <div class="pillar-card">
+                    <div class="pillar-icon-box icon-teal">
+                        <i class="fas fa-stethoscope"></i>
+                    </div>
+                    <div class="pillar-title">2. ML Symptom-to-Disease Inference</div>
+                    <p class="pillar-text">
+                        A dual-algorithm machine learning engine (Support Vector Classifier + Random Forest ensemble) mapped across 132+ discrete symptoms. Patients and clinicians input reported symptoms to receive ranked disease probabilities and lifestyle recommendations.
+                    </p>
+                    <div class="pillar-bullets">
+                        <div class="pillar-bullet"><i class="fas fa-check"></i> <span>Ensemble ML classification trained on comprehensive clinical datasets</span></div>
+                        <div class="pillar-bullet"><i class="fas fa-check"></i> <span>Actionable clinical precautions, dietary suggestions & workout modifications</span></div>
+                        <div class="pillar-bullet"><i class="fas fa-check"></i> <span>Specialist referral recommendations for targeted medical follow-ups</span></div>
+                    </div>
+                </div>
+
+                <!-- Pillar 3 -->
+                <div class="pillar-card">
+                    <div class="pillar-icon-box icon-purple">
+                        <i class="fas fa-pills"></i>
+                    </div>
+                    <div class="pillar-title">3. Multi-Source Pharmacy Marketplace</div>
+                    <p class="pillar-text">
+                        Queries PharmEasy, OpenFDA NDC, and NIH RxNorm concurrently in real-time. Automatically clusters equivalent drug formulations, normalizes dosage strengths, filters out of stock items, and highlights the lowest verified retail price.
+                    </p>
+                    <div class="pillar-bullets">
+                        <div class="pillar-bullet"><i class="fas fa-check"></i> <span>Live parallel queries with sub-second response times and TTL caching</span></div>
+                        <div class="pillar-bullet"><i class="fas fa-check"></i> <span>Schedule H prescription document enforcement prior to checkout</span></div>
+                        <div class="pillar-bullet"><i class="fas fa-check"></i> <span>Integrated cart, pre-checkout price revalidation & verifiable receipts</span></div>
+                    </div>
+                </div>
+
+                <!-- Pillar 4 -->
+                <div class="pillar-card">
+                    <div class="pillar-icon-box icon-amber">
+                        <i class="fas fa-comments-medical"></i>
+                    </div>
+                    <div class="pillar-title">4. 24/7 Gemini 3.7 Flash Clinical Copilot</div>
+                    <p class="pillar-text">
+                        An evidence-based conversational medical copilot powered by Google Gemini 3.7 Flash (with automatic 3.8 / 2.0 / 1.5 fallback resilience). Built with strict clinical safety boundaries, emergency red-flag triage, and multi-turn session recall.
+                    </p>
+                    <div class="pillar-bullets">
+                        <div class="pillar-bullet"><i class="fas fa-check"></i> <span>Evidence-based clinical explanations, contraindications & drug interactions</span></div>
+                        <div class="pillar-bullet"><i class="fas fa-check"></i> <span>Automatic emergency triage and SOS dispatch suggestions</span></div>
+                        <div class="pillar-bullet"><i class="fas fa-check"></i> <span>Persistent multi-turn chat threads synchronized with user workspace</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== COMPLETE PLATFORM FEATURES ===== -->
+    <section class="section-wrap" id="features">
+        <div class="container">
+            <div class="text-center">
+                <span class="section-tag">Platform Matrix</span>
+                <h2 class="section-heading">Everything You Need In One Clinical Suite</h2>
+                <p class="section-desc">
+                    Explore all 8 dedicated tools and modules integrated into the MedScript clinical operating system.
+                </p>
+            </div>
+
+            <div class="features-grid">
+                <!-- 1 -->
+                <div class="feature-box">
+                    <div class="feature-icon-sm icon-blue"><i class="fas fa-file-medical"></i></div>
+                    <div class="feature-box-title">Multimodal OCR Reader</div>
+                    <p class="feature-box-desc">Converts handwriting and printed prescription photos into clean clinical structured records.</p>
+                </div>
+                <!-- 2 -->
+                <div class="feature-box">
+                    <div class="feature-icon-sm icon-teal"><i class="fas fa-file-pdf"></i></div>
+                    <div class="feature-box-title">Printable Rx Generator</div>
+                    <p class="feature-box-desc">Generate official, signed clinical prescription PDFs with custom clinic letterheads.</p>
+                </div>
+                <!-- 3 -->
+                <div class="feature-box">
+                    <div class="feature-icon-sm icon-purple"><i class="fas fa-search-dollar"></i></div>
+                    <div class="feature-box-title">Live Price Compare</div>
+                    <p class="feature-box-desc">Side-by-side pharmacy pricing across PharmEasy, OpenFDA, and RxNav in real-time.</p>
+                </div>
+                <!-- 4 -->
+                <div class="feature-box">
+                    <div class="feature-icon-sm icon-amber"><i class="fas fa-shield-halved"></i></div>
+                    <div class="feature-box-title">Schedule H Validation</div>
+                    <p class="feature-box-desc">Mandatory Rx verification ensuring compliant dispensing of regulated pharmaceuticals.</p>
+                </div>
+                <!-- 5 -->
+                <div class="feature-box">
+                    <div class="feature-icon-sm icon-blue"><i class="fas fa-microscope"></i></div>
+                    <div class="feature-box-title">ML Disease Classifier</div>
+                    <p class="feature-box-desc">Ensemble Random Forest & SVM model mapping 132+ symptoms to diagnostic classifications.</p>
+                </div>
+                <!-- 6 -->
+                <div class="feature-box">
+                    <div class="feature-icon-sm icon-teal"><i class="fas fa-robot"></i></div>
+                    <div class="feature-box-title">Gemini 3.7 Copilot</div>
+                    <p class="feature-box-desc">Multi-turn clinical dialogue with automatic medical safety guardrails and fallback chain.</p>
+                </div>
+                <!-- 7 -->
+                <div class="feature-box">
+                    <div class="feature-icon-sm icon-purple"><i class="fas fa-user-doctor"></i></div>
+                    <div class="feature-box-title">Specialist Matching</div>
+                    <p class="feature-box-desc">Matches patient symptoms with certified specialists across 6 core medical disciplines.</p>
+                </div>
+                <!-- 8 -->
+                <div class="feature-box">
+                    <div class="feature-icon-sm icon-amber"><i class="fas fa-truck-medical"></i></div>
+                    <div class="feature-box-title">Emergency SOS Dispatch</div>
+                    <p class="feature-box-desc">1-click emergency alert broadcast with GPS geolocation and verified hospital helpline directory.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== HOW IT WORKS WORKFLOW ===== -->
+    <section class="section-wrap" id="how-it-works" style="background: rgba(11, 17, 32, 0.4);">
+        <div class="container">
+            <div class="text-center">
+                <span class="section-tag">Clinical Workflow</span>
+                <h2 class="section-heading">How MedScript Works in 3 Simple Steps</h2>
+                <p class="section-desc">
+                    From raw prescription image or reported symptoms to verified treatment and best-price medicine procurement.
+                </p>
+            </div>
+
+            <div class="steps-container">
+                <div class="step-card">
+                    <div class="step-number">01</div>
+                    <div class="step-icon-wrap"><i class="fas fa-upload"></i></div>
+                    <div class="step-title">Upload or Input</div>
+                    <p class="step-desc">
+                        Upload a photo of your handwritten prescription, enter current symptoms, or search for a specific medicine by brand or molecule name.
+                    </p>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">02</div>
+                    <div class="step-icon-wrap"><i class="fas fa-microchip"></i></div>
+                    <div class="step-title">Multi-Model AI Analysis</div>
+                    <p class="step-desc">
+                        Google Vision OCR digitizes text, ML models predict disease likelihoods, and our commerce engine searches pharmacy APIs simultaneously.
+                    </p>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">03</div>
+                    <div class="step-icon-wrap"><i class="fas fa-check-double"></i></div>
+                    <div class="step-title">Deliver & Dispense</div>
+                    <p class="step-desc">
+                        Review verified digital prescriptions, consult specialist doctors, or order required medications at the lowest verified pharmacy price.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PHARMACY MARKETPLACE LIVE COMPARISON ===== -->
+    <section class="section-wrap" id="comparison">
+        <div class="container">
+            <div class="text-center">
+                <span class="section-tag">Price Transparency</span>
+                <h2 class="section-heading">Live Multi-Source Pharmacy Comparison</h2>
+                <p class="section-desc">
+                    MedScript connects directly to pharmacy endpoints to save patients up to 35% on daily and chronic medications.
+                </p>
+            </div>
+
+            <div class="comparison-table-wrap">
+                <table class="comp-table">
+                    <thead>
+                        <tr>
+                            <th>Medicine & Formulation</th>
+                            <th>Clinical Strength</th>
+                            <th>PharmEasy (Live)</th>
+                            <th>Retail MRP</th>
+                            <th>Prescription Required</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Dolo 650 Tablet</strong><br><span style="font-size: 12px; color: var(--text-muted);">Micro Labs Ltd • Strip of 15</span></td>
+                            <td>Paracetamol 650mg</td>
+                            <td><span style="color: #34D399; font-weight: 700;">₹30.50</span> <span class="badge-best">15% OFF</span></td>
+                            <td><del style="color: var(--text-muted);">₹36.00</del></td>
+                            <td><span class="badge-best">OTC / Standard</span></td>
+                            <td><a href="{{ url_for('medicine_search') }}?q=Dolo+650" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Compare</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Augmentin 625 Duo Tablet</strong><br><span style="font-size: 12px; color: var(--text-muted);">GSK • Strip of 10</span></td>
+                            <td>Amoxicillin 500mg + Clavulanic Acid 125mg</td>
+                            <td><span style="color: #34D399; font-weight: 700;">₹172.40</span> <span class="badge-best">16% OFF</span></td>
+                            <td><del style="color: var(--text-muted);">₹205.24</del></td>
+                            <td><span class="rx-badge" style="background: rgba(220, 38, 38, 0.15); color: #F87171; border-color: rgba(220, 38, 38, 0.3);">Schedule H Required</span></td>
+                            <td><a href="{{ url_for('medicine_search') }}?q=Augmentin" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Compare</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Pan 40 Tablet</strong><br><span style="font-size: 12px; color: var(--text-muted);">Alkem Laboratories • Strip of 15</span></td>
+                            <td>Pantoprazole 40mg</td>
+                            <td><span style="color: #34D399; font-weight: 700;">₹135.20</span> <span class="badge-best">18% OFF</span></td>
+                            <td><del style="color: var(--text-muted);">₹165.00</del></td>
+                            <td><span class="rx-badge" style="background: rgba(220, 38, 38, 0.15); color: #F87171; border-color: rgba(220, 38, 38, 0.3);">Schedule H Required</span></td>
+                            <td><a href="{{ url_for('medicine_search') }}?q=Pan+40" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Compare</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Cetirizine 10mg Tablet</strong><br><span style="font-size: 12px; color: var(--text-muted);">Dr. Reddy's • Strip of 10</span></td>
+                            <td>Cetirizine Hydrochloride 10mg</td>
+                            <td><span style="color: #34D399; font-weight: 700;">₹18.00</span> <span class="badge-best">20% OFF</span></td>
+                            <td><del style="color: var(--text-muted);">₹22.50</del></td>
+                            <td><span class="badge-best">OTC / Standard</span></td>
+                            <td><a href="{{ url_for('medicine_search') }}?q=Cetirizine" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Compare</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FAQ SECTION ===== -->
+    <section class="section-wrap" id="faq" style="background: rgba(11, 17, 32, 0.4);">
+        <div class="container">
+            <div class="text-center">
+                <span class="section-tag">Questions & Answers</span>
+                <h2 class="section-heading">Frequently Asked Questions</h2>
+                <p class="section-desc">
+                    Find quick answers about our AI models, pharmacy sources, Schedule H regulations, and data security.
+                </p>
+            </div>
+
+            <div class="faq-grid">
+                <div class="faq-item">
+                    <div class="faq-q"><i class="fas fa-question-circle"></i> Which AI models power MedScript?</div>
+                    <div class="faq-a">
+                        MedScript utilizes Google Gemini 3.7 Flash (with fallback to 3.8 and 2.0 Flash) for conversational copilot assistance, Google Cloud Vision AI for multimodal prescription OCR, and Scikit-Learn (SVM + Random Forest) for symptom-disease prediction.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-q"><i class="fas fa-question-circle"></i> How does the medicine price comparison work?</div>
+                    <div class="faq-a">
+                        When you search for a medicine, MedScript queries multiple verified sources in parallel (PharmEasy, OpenFDA NDC, NIH RxNorm). Our deduplication engine matches identical formulations and ranks results by lowest retail price and stock status.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-q"><i class="fas fa-question-circle"></i> What is Schedule H prescription compliance?</div>
+                    <div class="faq-a">
+                        Under Indian Drugs and Cosmetics Rules, Schedule H medications require a valid registered medical practitioner's prescription. MedScript automatically detects Schedule H drugs and requires prescription document upload before checkout.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-q"><i class="fas fa-question-circle"></i> Is patient data private and secure?</div>
+                    <div class="faq-a">
+                        Yes. MedScript complies with healthcare privacy standards. All transmissions are encrypted with 256-bit SSL, prescription uploads are isolated, and no health data is shared or sold to third parties.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== CTA BANNER ===== -->
+    <div class="container">
+        <div class="cta-banner">
+            <h2 class="cta-title">Ready to Experience Modern Clinical Intelligence?</h2>
+            <p class="cta-text">
+                Join healthcare professionals and patients using MedScript for prescription digitization, AI clinical diagnostics, and pharmacy savings.
+            </p>
+            <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+                <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-rocket"></i> Open MedScript Workspace
+                </a>
+                <a href="{{ url_for('signup') }}" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-user-plus"></i> Create Free Account
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="brand-logo" style="margin-bottom: 8px;">
+                        <div class="brand-icon"><i class="fas fa-heart-pulse"></i></div>
+                        <div class="brand-name">MedScript <span class="brand-badge">PRO</span></div>
+                    </div>
+                    <p>
+                        Enterprise AI-powered clinical intelligence and pharmacy commerce operating system. Built for healthcare professionals, clinics, and patients.
+                    </p>
+                </div>
+
+                <div>
+                    <div class="footer-col-title">Clinical Workspace</div>
+                    <ul class="footer-links">
+                        <li><a href="{{ url_for('index') }}">Dashboard</a></li>
+                        <li><a href="{{ url_for('medscript') }}">Prescription OCR Scanner</a></li>
+                        <li><a href="{{ url_for('ai_consultant') }}">AI Symptom Checker</a></li>
+                        <li><a href="{{ url_for('chatbot') }}">Medical Assistant AI</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <div class="footer-col-title">Pharmacy & Care</div>
+                    <ul class="footer-links">
+                        <li><a href="{{ url_for('medicine_search') }}">Medicine Search</a></li>
+                        <li><a href="{{ url_for('doctor_consultation') }}">Doctor Consultation</a></li>
+                        <li><a href="{{ url_for('emergency') }}">Emergency Services</a></li>
+                        <li><a href="{{ url_for('health_check') }}">System Health Status</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <div class="footer-col-title">Developers & Architecture</div>
+                    <p style="color: var(--text-secondary); font-size: 13.5px; margin-bottom: 12px; line-height: 1.6;">
+                        Engineered by <strong>Hitesh Gottapu</strong> and <strong>Jaswanth Kollipara</strong>.
+                    </p>
+                    <ul class="footer-links">
+                        <li><a href="{{ url_for('developers') }}"><i class="fas fa-code"></i> Developer Profile</a></li>
+                        <li><a href="{{ url_for('contact') }}"><i class="fas fa-envelope"></i> Contact Support</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div>&copy; 2026 MedScript Healthcare Systems. All rights reserved.</div>
+                <div style="display: flex; gap: 20px;">
+                    <a href="{{ url_for('landing') }}" style="color: var(--text-muted);">Home</a>
+                    <a href="{{ url_for('features') }}" style="color: var(--text-muted);">Features</a>
+                    <a href="{{ url_for('health_check') }}" style="color: var(--text-muted);">API Status</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

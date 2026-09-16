@@ -4,6 +4,7 @@ Test Multi-Source Medicine Search, Cart, Revalidation, Prescription Verification
 
 import io
 import json
+import uuid
 
 
 def test_medicine_search_live(client):
@@ -92,10 +93,11 @@ def test_cart_workflow_and_schedule_h_enforcement(client):
     rx_id = rx_upload_data["prescription_id"]
     rx_url = rx_upload_data["file_url"]
 
-    # 5. Place order with prescription & idempotency key
+    # 5. Place order with prescription & unique idempotency key
+    test_idemp_key = f"idemp_test_key_{uuid.uuid4().hex[:8]}"
     checkout_payload["prescription_id"] = rx_id
     checkout_payload["prescription_file_url"] = rx_url
-    checkout_payload["idempotency_key"] = "idemp_test_unique_key_999"
+    checkout_payload["idempotency_key"] = test_idemp_key
 
     order_res = client.post("/api/checkout/order", json=checkout_payload)
     assert order_res.status_code == 200
