@@ -15,52 +15,70 @@ CLINICAL_DOCTORS = [
         "name": "Dr. Ananya Mukherjee, M.D.",
         "specialization": "Pulmonologist & Chest Specialist",
         "hospital": "Apollo Hospitals, Jubilee Hills",
+        "city": "Hyderabad",
         "email": "dr.ananya.m@apollohospitals.com",
         "rating": 4.8,
         "experience": "14+ years",
         "fee": "₹800",
         "available_time": "Today, 4:30 PM",
         "consult_type": "Video & In-Clinic",
-        "keywords": ["cough", "breath", "breathing", "asthma", "chest", "lungs", "pulmonologist", "pulmonology", "wheezing", "shortness of breath", "bronchitis", "pneumonia", "respiratory"]
+        "keywords": ["cough", "breath", "breathing", "asthma", "chest", "lungs", "pulmonologist", "pulmonology", "wheezing", "shortness of breath", "bronchitis", "pneumonia", "respiratory", "hyderabad", "jubilee hills"]
     },
     {
         "id": "doc_pulm_2",
         "name": "Dr. Vikramaditya Rao, M.D., DM",
         "specialization": "Senior Pulmonologist & Interventional Specialist",
         "hospital": "Yashoda Hospitals, Secunderabad",
+        "city": "Hyderabad",
         "email": "dr.vikram.rao@yashodahospitals.com",
         "rating": 4.9,
         "experience": "18+ years",
         "fee": "₹1,000",
         "available_time": "Today, 6:00 PM",
         "consult_type": "In-Clinic & Video",
-        "keywords": ["cough", "breath", "breathing", "asthma", "chest", "lungs", "pulmonologist", "pulmonology", "copd", "interventional pulmonology", "allergy", "chest pain"]
+        "keywords": ["cough", "breath", "breathing", "asthma", "chest", "lungs", "pulmonologist", "pulmonology", "copd", "interventional pulmonology", "allergy", "chest pain", "hyderabad", "secunderabad"]
     },
     {
         "id": "doc_pulm_3",
         "name": "Dr. Rituja Deshmukh, DNB, FCCP",
         "specialization": "Chest Physician & Sleep Apnea Specialist",
         "hospital": "Care Hospitals, Banjara Hills",
+        "city": "Hyderabad",
         "email": "dr.rituja.d@carehospitals.com",
         "rating": 4.7,
         "experience": "11+ years",
         "fee": "₹700",
         "available_time": "Tomorrow, 10:30 AM",
         "consult_type": "Video Consult",
-        "keywords": ["cough", "breath", "breathing", "asthma", "chest", "lungs", "pulmonologist", "pulmonology", "snoring", "sleep apnea", "tb", "tuberculosis", "cold"]
+        "keywords": ["cough", "breath", "breathing", "asthma", "chest", "lungs", "pulmonologist", "pulmonology", "snoring", "sleep apnea", "tb", "tuberculosis", "cold", "hyderabad", "banjara hills"]
     },
     {
         "id": "doc_pulm_4",
         "name": "Dr. Arvind Mehta, M.D., DNB",
         "specialization": "Pulmonologist & Critical Care",
         "hospital": "Fortis Healthcare, Bannerghatta",
+        "city": "Bengaluru",
         "email": "dr.arvind.mehta@fortis.com",
         "rating": 4.9,
         "experience": "16+ years",
         "fee": "₹900",
         "available_time": "Tomorrow, 2:00 PM",
         "consult_type": "In-Clinic & Video",
-        "keywords": ["cough", "breath", "breathing", "asthma", "chest", "lungs", "pulmonologist", "pulmonology", "lung infection", "oxygen", "chronic cough"]
+        "keywords": ["cough", "breath", "breathing", "asthma", "chest", "lungs", "pulmonologist", "pulmonology", "lung infection", "oxygen", "chronic cough", "bengaluru", "bangalore", "bannerghatta"]
+    },
+    {
+        "id": "doc_pulm_5",
+        "name": "Dr. Sameer Godbole, M.D.",
+        "specialization": "Pulmonary & Respiratory Care",
+        "hospital": "Lilavati Hospital, Bandra",
+        "city": "Mumbai",
+        "email": "dr.sameer.g@lilavatihospital.com",
+        "rating": 4.8,
+        "experience": "15+ years",
+        "fee": "₹1,100",
+        "available_time": "Today, 5:30 PM",
+        "consult_type": "In-Clinic & Video",
+        "keywords": ["cough", "breath", "breathing", "asthma", "chest", "lungs", "pulmonologist", "pulmonology", "mumbai", "bandra"]
     },
 
     # --- CARDIOLOGY ---
@@ -69,39 +87,56 @@ CLINICAL_DOCTORS = [
         "name": "Dr. Ramesh Kumar, M.D., DM",
         "specialization": "Senior Interventional Cardiologist",
         "hospital": "Apollo Hospitals, Heart Institute",
+        "city": "Hyderabad",
         "email": "dr.ramesh.kumar@apollohospitals.com",
         "rating": 4.9,
         "experience": "20+ years",
         "fee": "₹1,200",
         "available_time": "Today, 5:15 PM",
         "consult_type": "In-Clinic & Video",
-        "keywords": ["heart", "chest pain", "blood pressure", "hypertension", "palpitations", "cardio", "cardiologist", "cardiology", "arrhythmia", "cholesterol", "angina"]
+        "keywords": ["heart", "chest pain", "blood pressure", "hypertension", "palpitations", "cardio", "cardiologist", "cardiology", "arrhythmia", "cholesterol", "angina", "hyderabad", "jubilee hills"]
     },
     {
         "id": "doc_card_2",
         "name": "Dr. Sanjay Kapoor, M.D., DM, FACC",
         "specialization": "Cardiologist & Electrophysiologist",
-        "hospital": "Fortis Escorts Heart Institute",
+        "hospital": "Fortis Escorts Heart Institute, Okhla",
+        "city": "Delhi",
         "email": "dr.sanjay.kapoor@fortis.com",
         "rating": 4.8,
         "experience": "17+ years",
         "fee": "₹1,100",
         "available_time": "Tomorrow, 11:00 AM",
         "consult_type": "Video Consult",
-        "keywords": ["heart", "chest pain", "blood pressure", "hypertension", "palpitations", "cardio", "cardiologist", "cardiology", "heart failure", "ecg", "cardiac"]
+        "keywords": ["heart", "chest pain", "blood pressure", "hypertension", "palpitations", "cardio", "cardiologist", "cardiology", "heart failure", "ecg", "cardiac", "delhi", "new delhi"]
     },
     {
         "id": "doc_card_3",
         "name": "Dr. Meenakshi Sundaram, M.D., DM",
         "specialization": "Clinical Cardiologist & Preventive Care",
-        "hospital": "Max Super Speciality Hospital",
+        "hospital": "Max Super Speciality Hospital, Saket",
+        "city": "Delhi",
         "email": "dr.meenakshi.s@maxhealthcare.com",
         "rating": 4.9,
         "experience": "15+ years",
         "fee": "₹950",
         "available_time": "Today, 7:00 PM",
         "consult_type": "In-Clinic & Video",
-        "keywords": ["heart", "chest pain", "blood pressure", "hypertension", "palpitations", "cardio", "cardiologist", "cardiology", "lipid", "cardiac risk"]
+        "keywords": ["heart", "chest pain", "blood pressure", "hypertension", "palpitations", "cardio", "cardiologist", "cardiology", "lipid", "cardiac risk", "delhi", "saket"]
+    },
+    {
+        "id": "doc_card_4",
+        "name": "Dr. K. S. Murthy, M.Ch, FIACS",
+        "specialization": "Chief Cardiothoracic Specialist",
+        "hospital": "Care Hospitals, Banjara Hills",
+        "city": "Hyderabad",
+        "email": "dr.ks.murthy@carehospitals.com",
+        "rating": 4.9,
+        "experience": "24+ years",
+        "fee": "₹1,300",
+        "available_time": "Today, 4:00 PM",
+        "consult_type": "In-Clinic & Video",
+        "keywords": ["heart", "chest pain", "cardiac", "bypass", "valve", "cardiologist", "cardiology", "hyderabad", "banjara hills"]
     },
 
     # --- DERMATOLOGY ---
@@ -109,40 +144,57 @@ CLINICAL_DOCTORS = [
         "id": "doc_derm_1",
         "name": "Dr. Priya Sharma, M.D., DNB",
         "specialization": "Dermatologist & Cosmetologist",
-        "hospital": "Fortis Healthcare",
+        "hospital": "Fortis Healthcare, Cunningham",
+        "city": "Bengaluru",
         "email": "dr.priya.sharma@fortis.com",
         "rating": 4.8,
         "experience": "12+ years",
         "fee": "₹750",
         "available_time": "Today, 4:00 PM",
         "consult_type": "Video & In-Clinic",
-        "keywords": ["skin", "rash", "itching", "acne", "hair", "allergy", "dermatologist", "dermatology", "spots", "eczema", "psoriasis", "fungal", "skin peeling"]
+        "keywords": ["skin", "rash", "itching", "acne", "hair", "allergy", "dermatologist", "dermatology", "spots", "eczema", "psoriasis", "fungal", "skin peeling", "bengaluru", "bangalore"]
     },
     {
         "id": "doc_derm_2",
         "name": "Dr. Rohan Varma, M.D.",
         "specialization": "Consultant Dermatologist & Trichologist",
         "hospital": "Apollo Clinics, Kondapur",
+        "city": "Hyderabad",
         "email": "dr.rohan.varma@apollohospitals.com",
         "rating": 4.9,
         "experience": "15+ years",
         "fee": "₹850",
         "available_time": "Tomorrow, 10:00 AM",
         "consult_type": "In-Clinic & Video",
-        "keywords": ["skin", "rash", "itching", "acne", "hair", "allergy", "dermatologist", "dermatology", "hair loss", "scalp", "pigmentation", "skin infection"]
+        "keywords": ["skin", "rash", "itching", "acne", "hair", "allergy", "dermatologist", "dermatology", "hair loss", "scalp", "pigmentation", "skin infection", "hyderabad", "kondapur", "hitec city"]
     },
     {
         "id": "doc_derm_3",
         "name": "Dr. Shalini Kulkarni, M.D., DVD",
         "specialization": "Pediatric & Aesthetic Dermatologist",
         "hospital": "Care Hospitals, Hitec City",
+        "city": "Hyderabad",
         "email": "dr.shalini.k@carehospitals.com",
         "rating": 4.7,
         "experience": "9+ years",
         "fee": "₹650",
         "available_time": "Today, 6:30 PM",
         "consult_type": "Video Consult",
-        "keywords": ["skin", "rash", "itching", "acne", "hair", "allergy", "dermatologist", "dermatology", "mole", "warts", "dermatitis"]
+        "keywords": ["skin", "rash", "itching", "acne", "hair", "allergy", "dermatologist", "dermatology", "mole", "warts", "dermatitis", "hyderabad", "hitec city"]
+    },
+    {
+        "id": "doc_derm_4",
+        "name": "Dr. Aniruddh Joshi, M.D.",
+        "specialization": "Clinical Dermatologist & Laser Surgeon",
+        "hospital": "Nanavati Max Hospital, Vile Parle",
+        "city": "Mumbai",
+        "email": "dr.aniruddh.j@nanavatihospital.com",
+        "rating": 4.8,
+        "experience": "14+ years",
+        "fee": "₹900",
+        "available_time": "Tomorrow, 11:30 AM",
+        "consult_type": "In-Clinic & Video",
+        "keywords": ["skin", "rash", "itching", "acne", "dermatologist", "dermatology", "mumbai", "vile parle"]
     },
 
     # --- NEUROLOGY ---
@@ -151,39 +203,56 @@ CLINICAL_DOCTORS = [
         "name": "Dr. Arvind Swaminathan, DM",
         "specialization": "Senior Consultant Neurologist",
         "hospital": "Manipal Hospitals, Whitefield",
+        "city": "Bengaluru",
         "email": "dr.arvind.s@manipal.com",
         "rating": 4.9,
         "experience": "18+ years",
         "fee": "₹1,200",
         "available_time": "Today, 5:00 PM",
         "consult_type": "In-Clinic & Video",
-        "keywords": ["headache", "migraine", "dizziness", "nerve", "seizure", "numbness", "neurologist", "neurology", "brain", "vertigo", "stroke", "tremors", "paralysis"]
+        "keywords": ["headache", "migraine", "dizziness", "nerve", "seizure", "numbness", "neurologist", "neurology", "brain", "vertigo", "stroke", "tremors", "paralysis", "bengaluru", "bangalore", "whitefield"]
     },
     {
         "id": "doc_neuro_2",
         "name": "Dr. Neha Singhal, M.D., DM",
         "specialization": "Neurologist & Movement Disorder Specialist",
         "hospital": "Apollo Hospitals, Central",
+        "city": "Chennai",
         "email": "dr.neha.singhal@apollohospitals.com",
         "rating": 4.8,
         "experience": "13+ years",
         "fee": "₹900",
         "available_time": "Tomorrow, 11:30 AM",
         "consult_type": "Video Consult",
-        "keywords": ["headache", "migraine", "dizziness", "nerve", "seizure", "numbness", "neurologist", "neurology", "epilepsy", "parkinson", "memory loss"]
+        "keywords": ["headache", "migraine", "dizziness", "nerve", "seizure", "numbness", "neurologist", "neurology", "epilepsy", "parkinson", "memory loss", "chennai", "greams road"]
     },
     {
         "id": "doc_neuro_3",
         "name": "Dr. V. S. Ramachandra, M.D., DM",
         "specialization": "Neuro Physician & Stroke Specialist",
         "hospital": "Yashoda Hospitals, Somajiguda",
+        "city": "Hyderabad",
         "email": "dr.vs.ramachandra@yashodahospitals.com",
         "rating": 4.9,
         "experience": "22+ years",
         "fee": "₹1,300",
         "available_time": "Today, 7:30 PM",
         "consult_type": "In-Clinic Only",
-        "keywords": ["headache", "migraine", "dizziness", "nerve", "seizure", "numbness", "neurologist", "neurology", "neuralgia", "spinal pain", "balance"]
+        "keywords": ["headache", "migraine", "dizziness", "nerve", "seizure", "numbness", "neurologist", "neurology", "neuralgia", "spinal pain", "balance", "hyderabad", "somajiguda"]
+    },
+    {
+        "id": "doc_neuro_4",
+        "name": "Dr. Swati Reddy, M.D., DM",
+        "specialization": "Consultant Neurologist & Epilepsy Specialist",
+        "hospital": "Care Hospitals, Banjara Hills",
+        "city": "Hyderabad",
+        "email": "dr.swati.reddy@carehospitals.com",
+        "rating": 4.8,
+        "experience": "11+ years",
+        "fee": "₹850",
+        "available_time": "Tomorrow, 3:00 PM",
+        "consult_type": "Video & In-Clinic",
+        "keywords": ["headache", "migraine", "dizziness", "nerve", "neurologist", "neurology", "hyderabad", "banjara hills"]
     },
 
     # --- ORTHOPEDICS ---
@@ -191,40 +260,43 @@ CLINICAL_DOCTORS = [
         "id": "doc_ortho_1",
         "name": "Dr. Rajesh Patel, M.S., M.Ch",
         "specialization": "Orthopedic & Joint Replacement Surgeon",
-        "hospital": "Max Super Speciality Hospital",
+        "hospital": "Max Super Speciality Hospital, Saket",
+        "city": "Delhi",
         "email": "dr.rajesh.patel@maxhealthcare.com",
         "rating": 4.8,
         "experience": "15+ years",
         "fee": "₹900",
         "available_time": "Today, 4:45 PM",
         "consult_type": "In-Clinic & Video",
-        "keywords": ["joint", "bone", "knee", "back pain", "fracture", "arthritis", "orthopedic", "orthopedist", "orthopaedics", "shoulder", "ligament", "hip pain"]
+        "keywords": ["joint", "bone", "knee", "back pain", "fracture", "arthritis", "orthopedic", "orthopedist", "orthopaedics", "shoulder", "ligament", "hip pain", "delhi", "saket"]
     },
     {
         "id": "doc_ortho_2",
         "name": "Dr. Harish Chandra, M.S. Ortho, Fellowship (UK)",
         "specialization": "Spine & Sports Injury Specialist",
         "hospital": "Apollo Hospitals, Jubilee Hills",
+        "city": "Hyderabad",
         "email": "dr.harish.chandra@apollohospitals.com",
         "rating": 4.9,
         "experience": "19+ years",
         "fee": "₹1,100",
         "available_time": "Tomorrow, 12:00 PM",
         "consult_type": "In-Clinic & Video",
-        "keywords": ["joint", "bone", "knee", "back pain", "fracture", "arthritis", "orthopedic", "orthopedist", "spine", "slip disc", "sciatica", "neck pain", "sports injury"]
+        "keywords": ["joint", "bone", "knee", "back pain", "fracture", "arthritis", "orthopedic", "orthopedist", "spine", "slip disc", "sciatica", "neck pain", "sports injury", "hyderabad", "jubilee hills"]
     },
     {
         "id": "doc_ortho_3",
         "name": "Dr. Sneha Joshi, DNB Ortho",
         "specialization": "Orthopedic Surgeon & Arthroscopy",
         "hospital": "Care Hospitals, Banjara Hills",
+        "city": "Hyderabad",
         "email": "dr.sneha.joshi@carehospitals.com",
         "rating": 4.7,
         "experience": "10+ years",
         "fee": "₹700",
         "available_time": "Today, 6:15 PM",
         "consult_type": "Video Consult",
-        "keywords": ["joint", "bone", "knee", "back pain", "fracture", "arthritis", "orthopedic", "orthopedist", "muscle tear", "tendon", "sprain"]
+        "keywords": ["joint", "bone", "knee", "back pain", "fracture", "arthritis", "orthopedic", "orthopedist", "muscle tear", "tendon", "sprain", "hyderabad", "banjara hills"]
     },
 
     # --- INTERNAL MEDICINE & GENERAL PHYSICIAN ---
@@ -233,39 +305,56 @@ CLINICAL_DOCTORS = [
         "name": "Dr. Suresh Reddy, M.D.",
         "specialization": "Internal Medicine & General Physician",
         "hospital": "Care Hospitals, Banjara Hills",
+        "city": "Hyderabad",
         "email": "dr.suresh.reddy@carehospitals.com",
         "rating": 4.9,
         "experience": "16+ years",
         "fee": "₹600",
         "available_time": "Today, 3:30 PM",
         "consult_type": "Video & In-Clinic",
-        "keywords": ["fever", "cough", "cold", "infection", "headache", "general", "body ache", "fatigue", "weakness", "physician", "flu", "viral", "malaise"]
+        "keywords": ["fever", "cough", "cold", "infection", "headache", "general", "body ache", "fatigue", "weakness", "physician", "flu", "viral", "malaise", "hyderabad", "banjara hills"]
     },
     {
         "id": "doc_gen_2",
         "name": "Dr. Anjali Nair, M.D., PGDGM",
         "specialization": "Consultant Physician & Diabetologist",
         "hospital": "Apollo Clinics, Madhapur",
+        "city": "Hyderabad",
         "email": "dr.anjali.nair@apollohospitals.com",
         "rating": 4.8,
         "experience": "14+ years",
         "fee": "₹650",
         "available_time": "Today, 5:00 PM",
         "consult_type": "In-Clinic & Video",
-        "keywords": ["fever", "diabetes", "blood sugar", "thyroid", "fatigue", "general", "infection", "hypertension", "metabolic", "weakness"]
+        "keywords": ["fever", "diabetes", "blood sugar", "thyroid", "fatigue", "general", "infection", "hypertension", "metabolic", "weakness", "hyderabad", "madhapur", "hitec city"]
     },
     {
         "id": "doc_gen_3",
         "name": "Dr. Mohit Gupta, M.D.",
         "specialization": "General Medicine & Infectious Diseases",
         "hospital": "Fortis Hospital, Cunningham Road",
+        "city": "Bengaluru",
         "email": "dr.mohit.gupta@fortis.com",
         "rating": 4.8,
         "experience": "12+ years",
         "fee": "₹700",
         "available_time": "Tomorrow, 9:30 AM",
         "consult_type": "Video Consult",
-        "keywords": ["fever", "typhoid", "malaria", "dengue", "chills", "infection", "cough", "general", "vomiting", "nausea"]
+        "keywords": ["fever", "typhoid", "malaria", "dengue", "chills", "infection", "cough", "general", "vomiting", "nausea", "bengaluru", "bangalore"]
+    },
+    {
+        "id": "doc_gen_4",
+        "name": "Dr. Praveen Kumar, M.D.",
+        "specialization": "Senior Consultant Physician",
+        "hospital": "KIMS Hospitals, Secunderabad",
+        "city": "Hyderabad",
+        "email": "dr.praveen.k@kimshospitals.com",
+        "rating": 4.9,
+        "experience": "17+ years",
+        "fee": "₹750",
+        "available_time": "Today, 6:00 PM",
+        "consult_type": "In-Clinic & Video",
+        "keywords": ["fever", "cough", "cold", "infection", "general", "physician", "hyderabad", "secunderabad"]
     },
 
     # --- GASTROENTEROLOGY ---
@@ -273,40 +362,57 @@ CLINICAL_DOCTORS = [
         "id": "doc_gastro_1",
         "name": "Dr. Amitava Ghosh, M.D., DM",
         "specialization": "Senior Medical Gastroenterologist & Hepatologist",
-        "hospital": "Asian Institute of Gastroenterology (AIG)",
+        "hospital": "Asian Institute of Gastroenterology (AIG), Gachibowli",
+        "city": "Hyderabad",
         "email": "dr.amitava.ghosh@aighospitals.com",
         "rating": 4.9,
         "experience": "19+ years",
         "fee": "₹1,000",
         "available_time": "Today, 5:30 PM",
         "consult_type": "In-Clinic & Video",
-        "keywords": ["stomach", "acidity", "gastric", "gerd", "liver", "jaundice", "gastroenterologist", "gastroenterology", "abdomen", "diarrhea", "constipation", "ulcer", "vomiting", "indigestion"]
+        "keywords": ["stomach", "acidity", "gastric", "gerd", "liver", "jaundice", "gastroenterologist", "gastroenterology", "abdomen", "diarrhea", "constipation", "ulcer", "vomiting", "indigestion", "hyderabad", "gachibowli"]
     },
     {
         "id": "doc_gastro_2",
         "name": "Dr. Radhika Iyer, M.D., DM",
         "specialization": "Gastroenterologist & Therapeutic Endoscopist",
         "hospital": "Apollo Hospitals, Heart & Liver Institute",
+        "city": "Chennai",
         "email": "dr.radhika.iyer@apollohospitals.com",
         "rating": 4.8,
         "experience": "13+ years",
         "fee": "₹850",
         "available_time": "Tomorrow, 10:30 AM",
         "consult_type": "Video & In-Clinic",
-        "keywords": ["stomach", "acidity", "gastric", "gerd", "liver", "gastroenterologist", "gastroenterology", "ibs", "colon", "bloating", "gas", "abdominal pain"]
+        "keywords": ["stomach", "acidity", "gastric", "gerd", "liver", "gastroenterologist", "gastroenterology", "ibs", "colon", "bloating", "gas", "abdominal pain", "chennai"]
     },
     {
         "id": "doc_gastro_3",
         "name": "Dr. Deepak Verma, M.S., M.Ch",
         "specialization": "GI & Hepato-Pancreato-Biliary Surgeon",
         "hospital": "Fortis Healthcare, Bannerghatta",
+        "city": "Bengaluru",
         "email": "dr.deepak.verma@fortis.com",
         "rating": 4.9,
         "experience": "17+ years",
         "fee": "₹1,100",
         "available_time": "Today, 6:45 PM",
         "consult_type": "In-Clinic Only",
-        "keywords": ["stomach", "gastric", "gastroenterologist", "gastroenterology", "gallbladder", "hernia", "appendix", "piles", "fissure", "pancreas"]
+        "keywords": ["stomach", "gastric", "gastroenterologist", "gastroenterology", "gallbladder", "hernia", "appendix", "piles", "fissure", "pancreas", "bengaluru", "bangalore"]
+    },
+    {
+        "id": "doc_gastro_4",
+        "name": "Dr. Sudheer Reddy, M.D., DM",
+        "specialization": "Gastroenterologist & Digestive Health",
+        "hospital": "Yashoda Hospitals, Hitec City",
+        "city": "Hyderabad",
+        "email": "dr.sudheer.reddy@yashodahospitals.com",
+        "rating": 4.8,
+        "experience": "14+ years",
+        "fee": "₹850",
+        "available_time": "Today, 7:00 PM",
+        "consult_type": "Video & In-Clinic",
+        "keywords": ["stomach", "acidity", "gastric", "gerd", "liver", "gastroenterologist", "gastroenterology", "hyderabad", "hitec city"]
     }
 ]
 
@@ -316,24 +422,45 @@ def doctor_consultation():
     name = request.form.get("name", "")
     age = request.form.get("age", "")
     email = request.form.get("email", "")
+    location = (request.form.get("location") or request.args.get("location") or "").strip()
     symptoms = request.form.get("symptoms", "").strip()
 
     # Also support query parameter for category quick-filtering
     category = request.args.get("category", "").strip().lower()
     search_term = (symptoms or category).lower()
+    location_lower = location.lower()
 
+    filtered = CLINICAL_DOCTORS
+
+    # 1. Filter by location if specified (supports "Hyderabad", "Bengaluru", "Delhi", "Mumbai", "Chennai", etc.)
+    if location_lower and location_lower not in ("all", "all cities", "nationwide", "any"):
+        loc_matched = []
+        for doc in CLINICAL_DOCTORS:
+            doc_loc_blob = f"{doc.get('city', '').lower()} {doc.get('hospital', '').lower()} {' '.join(doc.get('keywords', []))}"
+            if location_lower in doc_loc_blob:
+                loc_matched.append(doc)
+        if loc_matched:
+            filtered = loc_matched
+
+    # 2. Filter by symptoms / specialty if specified
     if search_term:
         search_words = [w.strip() for w in search_term.replace(',', ' ').split() if len(w.strip()) > 1]
-        matched = []
-        for doc in CLINICAL_DOCTORS:
+        spec_matched = []
+        for doc in filtered:
             blob = f"{doc['name'].lower()} {doc['specialization'].lower()} {doc['hospital'].lower()} {' '.join(doc['keywords'])}"
-            # Match if any search token is in the doctor's profile or keywords
             if any(w in blob for w in search_words):
-                matched.append(doc)
-        doctors = matched if matched else CLINICAL_DOCTORS
+                spec_matched.append(doc)
+        
+        # If no specialty match within chosen location, fall back to nationwide doctors in that specialty with online consults
+        if not spec_matched:
+            for doc in CLINICAL_DOCTORS:
+                blob = f"{doc['name'].lower()} {doc['specialization'].lower()} {doc['hospital'].lower()} {' '.join(doc['keywords'])}"
+                if any(w in blob for w in search_words):
+                    spec_matched.append(doc)
+
+        doctors = spec_matched if spec_matched else filtered
     else:
-        # Default view: show all available clinical doctors so the user has immediate choices
-        doctors = CLINICAL_DOCTORS
+        doctors = filtered
 
     return render_template(
         "doctor_consultation.html",
@@ -341,6 +468,7 @@ def doctor_consultation():
         name=name,
         age=age,
         email=email,
+        location=location,
         symptoms=symptoms
     )
 

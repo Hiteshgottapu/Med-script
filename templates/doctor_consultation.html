@@ -168,9 +168,24 @@
             </div>
 
             <div class="form-group" style="margin-top: 16px;">
+                <label class="form-label" for="location">Location / City</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-map-marker-alt input-icon" style="color: #EF4444;"></i>
+                    <input type="text" class="form-input" id="location" name="location" placeholder="e.g. Hyderabad, Bengaluru, Delhi..." value="{{ location or '' }}">
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
+                    {% for city in ['Hyderabad', 'Bengaluru', 'Delhi', 'Mumbai', 'Chennai', 'All Cities'] %}
+                    <button type="button" class="badge badge-neutral" style="cursor: pointer; border: 1px solid var(--surface-2); font-size: 11px; padding: 2px 8px;" onclick="filterByCity('{{ city }}')">
+                        {{ city }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 16px;">
                 <label class="form-label" for="symptoms">Symptoms or Specialty</label>
-                <textarea class="form-textarea" id="symptoms" name="symptoms" placeholder="e.g. Pulmonologist, persistent cough, chest congestion, asthma..." rows="3" required>{{ symptoms or '' }}</textarea>
-                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Enter your health symptoms or desired doctor department</div>
+                <textarea class="form-textarea" id="symptoms" name="symptoms" placeholder="e.g. Pulmonologist, persistent cough, chest congestion, asthma..." rows="3">{{ symptoms or '' }}</textarea>
+                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Enter health symptoms or doctor specialty department</div>
             </div>
 
             <button type="submit" class="btn btn-primary btn-block btn-lg" id="findBtn" style="width: 100%; margin-top: 12px;">
@@ -199,7 +214,7 @@
         <div style="margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
             <div>
                 <div style="font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 800; color: var(--text-primary);">
-                    {{ doctors|length }} Specialist Doctors Available
+                    {{ doctors|length }} Specialist Doctors Available{% if location and location|lower not in ('all', 'all cities', 'nationwide', 'any') %} in {{ location.title() }}{% endif %}
                 </div>
                 <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">
                     Verified clinical practitioners with immediate consultation slots
@@ -244,6 +259,9 @@
                     </div>
 
                     <div class="doctor-meta-pills">
+                        <span class="doc-pill" style="color: #0284C7; background: rgba(2, 132, 199, 0.08); border-color: rgba(2, 132, 199, 0.2);">
+                            <i class="fas fa-map-marker-alt" style="color: #EF4444;"></i> {{ doctor.city }}
+                        </span>
                         <span class="doc-pill"><i class="fas fa-briefcase-medical"></i> {{ doctor.experience }}</span>
                         <span class="doc-pill"><i class="fas fa-video"></i> {{ doctor.consult_type or 'Video & In-Clinic' }}</span>
                     </div>
@@ -356,6 +374,12 @@ function addToSymptoms(text) {
 function searchBySpec(spec) {
     const ta = document.getElementById('symptoms');
     ta.value = spec;
+    document.getElementById('doctorForm').submit();
+}
+
+function filterByCity(city) {
+    const locInput = document.getElementById('location');
+    locInput.value = city === 'All Cities' ? '' : city;
     document.getElementById('doctorForm').submit();
 }
 
