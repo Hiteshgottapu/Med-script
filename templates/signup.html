@@ -4,21 +4,49 @@
 
 {% block extra_css %}
 <style>
-.auth-page { display: flex; min-height: calc(100vh - 64px); }
-.auth-brand { width: 420px; background: var(--sidebar-bg); padding: 48px 40px; display: flex; flex-direction: column; justify-content: center; flex-shrink: 0; }
-.auth-brand-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 48px; }
-.auth-brand-mark { width: 40px; height: 40px; background: var(--accent); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 18px; color: white; font-weight: 700; }
-.auth-brand-name { font-size: 20px; font-weight: 700; color: white; }
-.auth-brand-tagline { font-size: 28px; font-weight: 700; color: white; line-height: 1.3; margin-bottom: 16px; }
-.auth-brand-desc { font-size: 14px; color: var(--sidebar-text); line-height: 1.7; }
-.auth-form-area { flex: 1; display: flex; align-items: center; justify-content: center; padding: 48px 40px; overflow-y: auto; }
-.auth-card { width: 100%; max-width: 440px; }
-.auth-card-title { font-size: 26px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
-.auth-card-subtitle { font-size: 14px; color: var(--text-muted); margin-bottom: 32px; }
+/* Centered Fullscreen Auth Card */
+.auth-page { 
+    display: flex; 
+    width: 100%; 
+    max-width: 980px; 
+    min-height: 600px; 
+    background: rgba(17, 24, 39, 0.85); 
+    border: 1px solid rgba(255, 255, 255, 0.1); 
+    border-radius: 24px; 
+    overflow: hidden; 
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7); 
+    backdrop-filter: blur(16px);
+    margin: auto;
+}
+.auth-brand { 
+    width: 420px; 
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 15, 29, 0.98) 100%); 
+    padding: 48px 40px; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center; 
+    flex-shrink: 0; 
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+.auth-brand-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 36px; }
+.auth-brand-mark { width: 42px; height: 42px; background: linear-gradient(135deg, #0EA5E9, #0D9488); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: white; font-weight: 700; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4); }
+.auth-brand-name { font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 700; color: white; }
+.auth-brand-tagline { font-family: 'Outfit', sans-serif; font-size: 26px; font-weight: 700; color: white; line-height: 1.3; margin-bottom: 12px; letter-spacing: -0.5px; }
+.auth-brand-desc { font-size: 13.5px; color: #94A3B8; line-height: 1.65; }
+
+.auth-form-area { flex: 1; display: flex; align-items: center; justify-content: center; padding: 48px 44px; background: rgba(17, 24, 39, 0.5); overflow-y: auto; }
+.auth-card { width: 100%; max-width: 400px; }
+.auth-card-title { font-family: 'Outfit', sans-serif; font-size: 26px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; letter-spacing: -0.3px; }
+.auth-card-subtitle { font-size: 13.5px; color: var(--text-muted); margin-bottom: 24px; }
 .password-field { position: relative; }
 .password-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; }
-.form-input-lg { height: 46px; font-size: 15px; }
-@media (max-width: 900px) { .auth-brand { display: none; } .auth-form-area { padding: 32px 20px; } }
+.form-input-lg { height: 46px; font-size: 14.5px; }
+
+@media (max-width: 900px) { 
+    .auth-brand { display: none; } 
+    .auth-page { max-width: 480px; min-height: auto; }
+    .auth-form-area { padding: 36px 24px; } 
+}
 </style>
 {% endblock %}
 

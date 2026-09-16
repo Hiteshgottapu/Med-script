@@ -128,6 +128,18 @@ def get_dashboard_metrics():
 
 @main_bp.route("/", methods=["GET"])
 def index():
+    user = session.get('user')
+    if not user or not user.get('uid'):
+        return render_template("landing.html")
+    stats = get_dashboard_metrics()
+    return render_template("index.html", stats=stats)
+
+
+@main_bp.route("/dashboard", methods=["GET"])
+def dashboard():
+    user = session.get('user')
+    if not user or not user.get('uid'):
+        return redirect(url_for('auth.login'))
     stats = get_dashboard_metrics()
     return render_template("index.html", stats=stats)
 

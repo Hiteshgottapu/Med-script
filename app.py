@@ -74,6 +74,7 @@ def create_app(config_name=None):
         ('/health', 'health_check', 'main.health_check', ['GET']),
         ('/landing', 'landing', 'main.landing', ['GET']),
         ('/features', 'features', 'main.features', ['GET']),
+        ('/dashboard', 'dashboard', 'main.dashboard', ['GET']),
         ('/contact', 'contact', 'main.contact', ['GET']),
         ('/developers', 'developers', 'main.developers', ['GET']),
         ('/login', 'login', 'auth.login', ['GET', 'POST']),

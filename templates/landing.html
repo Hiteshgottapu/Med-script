@@ -891,17 +891,20 @@
 
                 <div class="nav-actions">
                     {% if session.get('user') %}
-                    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
                         <i class="fas fa-th-large"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                        Open Workspace <i class="fas fa-arrow-right"></i>
                     </a>
                     {% else %}
                     <a href="{{ url_for('login') }}" class="btn btn-secondary">
-                        Sign In
+                        <i class="fas fa-sign-in-alt"></i> Sign In
+                    </a>
+                    <a href="{{ url_for('signup') }}" class="btn btn-primary">
+                        Get Started <i class="fas fa-arrow-right"></i>
                     </a>
                     {% endif %}
-                    <a href="{{ url_for('index') }}" class="btn btn-primary">
-                        Launch Workspace <i class="fas fa-arrow-right"></i>
-                    </a>
                 </div>
             </div>
         </div>
@@ -1331,12 +1334,18 @@
                 Join healthcare professionals and patients using MedScript for prescription digitization, AI clinical diagnostics, and pharmacy savings.
             </p>
             <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
-                <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">
+                {% if session.get('user') %}
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg">
                     <i class="fas fa-rocket"></i> Open MedScript Workspace
                 </a>
-                <a href="{{ url_for('signup') }}" class="btn btn-secondary btn-lg">
-                    <i class="fas fa-user-plus"></i> Create Free Account
+                {% else %}
+                <a href="{{ url_for('signup') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-user-plus"></i> Get Started Free
                 </a>
+                <a href="{{ url_for('login') }}" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-sign-in-alt"></i> Sign In to Account
+                </a>
+                {% endif %}
             </div>
         </div>
     </div>
