@@ -14,49 +14,71 @@ config = get_config()
 def get_dashboard_metrics():
     """
     Computes authentic clinical workspace metrics and live recent activities.
-    Queries the actual commerce database, file storage, and active user session.
+    Queries the actual commerce database, user account, and active user session.
     """
     stats = {
         "prescriptions_count": 0,
-        "prescriptions_delta": "Ready to scan",
+        "prescriptions_delta": "0 uploaded yet",
         "orders_count": 0,
-        "orders_delta": "Commerce active",
+        "orders_delta": "No orders yet",
         "consultations_count": 0,
-        "consultations_delta": "AI model loaded",
+        "consultations_delta": "Ready to analyze",
         "emergency_alerts_count": 0,
         "emergency_delta": "All clear",
         "activities": []
     }
 
+    user_data = session.get("user")
+    user_id = user_data.get("uid") or user_data.get("id") if isinstance(user_data, dict) else None
+    user_email = user_data.get("email") if isinstance(user_data, dict) else None
+
+    # 1. Real Consultations & Emergency Alerts from session
+    consult_history = session.get("consultation_history", [])
+    stats["consultations_count"] = len(consult_history)
+    stats["consultations_delta"] = f"{len(consult_history)} consultations" if len(consult_history) > 0 else "Ready to analyze"
+
+    alerts_cnt = session.get("emergency_alerts_count", 0)
+    stats["emergency_alerts_count"] = alerts_cnt
+    stats["emergency_delta"] = f"{alerts_cnt} dispatched" if alerts_cnt > 0 else "All clear"
+
+    # 2. Real Prescriptions & Orders from Database / Session
     try:
         conn = sqlite3.connect(config.COMMERCE_DB_PATH, timeout=2.0)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
-        # 1. Real prescriptions from SQLite & filesystem
-        cur.execute("SELECT COUNT(*) as cnt FROM prescriptions")
-        rx_row = cur.fetchone()
-        db_rx_count = rx_row["cnt"] if rx_row else 0
-
-        fs_rx_count = 0
-        rx_dir = getattr(config, "PRESCRIPTION_UPLOAD_DIR", None)
-        if rx_dir and os.path.exists(rx_dir):
-            fs_rx_count = len([f for f in os.listdir(rx_dir) if not f.startswith(".")])
-
+        # Count prescriptions for logged-in user or session
         sess_rx = session.get("prescription_history", [])
-        total_rx = max(db_rx_count, fs_rx_count, len(sess_rx))
+        if user_id:
+            cur.execute("SELECT COUNT(*) as cnt FROM prescriptions WHERE user_id = ?", (user_id,))
+            rx_row = cur.fetchone()
+            db_rx_count = rx_row["cnt"] if rx_row else 0
+            total_rx = max(db_rx_count, len(sess_rx))
+        else:
+            total_rx = len(sess_rx)
+
         stats["prescriptions_count"] = total_rx
         stats["prescriptions_delta"] = f"{total_rx} scanned & digitized" if total_rx > 0 else "0 uploaded yet"
 
-        # 2. Real orders from SQLite
-        cur.execute("SELECT COUNT(*) as cnt FROM orders")
-        orders_row = cur.fetchone()
-        orders_cnt = orders_row["cnt"] if orders_row else 0
-        stats["orders_count"] = orders_cnt
-        stats["orders_delta"] = f"{orders_cnt} verified orders" if orders_cnt > 0 else "No orders yet"
+        # Count orders for logged-in user or session
+        sess_orders = session.get("orders", [])
+        if user_id or user_email:
+            cur.execute("SELECT COUNT(*) as cnt FROM orders WHERE user_id = ? OR user_email = ?", (user_id or "", user_email or ""))
+            orders_row = cur.fetchone()
+            orders_cnt = orders_row["cnt"] if orders_row else 0
+            total_orders = max(orders_cnt, len(sess_orders))
+        else:
+            total_orders = len(sess_orders)
 
-        # 3. Real Recent Activities from Orders
-        cur.execute("SELECT medscript_order_id, total_amount, payment_status, created_at FROM orders ORDER BY created_at DESC LIMIT 5")
+        stats["orders_count"] = total_orders
+        stats["orders_delta"] = f"{total_orders} verified orders" if total_orders > 0 else "No orders yet"
+
+        # Real Recent Activities from Orders
+        if user_id or user_email:
+            cur.execute("SELECT medscript_order_id, total_amount, payment_status, created_at FROM orders WHERE user_id = ? OR user_email = ? ORDER BY created_at DESC LIMIT 5", (user_id or "", user_email or ""))
+        else:
+            cur.execute("SELECT medscript_order_id, total_amount, payment_status, created_at FROM orders ORDER BY created_at DESC LIMIT 5")
+
         for ord_row in cur.fetchall():
             created_str = ord_row["created_at"][:16].replace("T", " ") if ord_row["created_at"] else "Recently"
             stats["activities"].append({
@@ -69,8 +91,12 @@ def get_dashboard_metrics():
                 "time": created_str
             })
 
-        # 4. Real Recent Activities from Prescriptions
-        cur.execute("SELECT patient_name, filename, verification_status, created_at FROM prescriptions ORDER BY created_at DESC LIMIT 5")
+        # Real Recent Activities from Prescriptions
+        if user_id:
+            cur.execute("SELECT patient_name, filename, verification_status, created_at FROM prescriptions WHERE user_id = ? ORDER BY created_at DESC LIMIT 5", (user_id,))
+        else:
+            cur.execute("SELECT patient_name, filename, verification_status, created_at FROM prescriptions ORDER BY created_at DESC LIMIT 5")
+
         for rx in cur.fetchall():
             created_str = rx["created_at"][:16].replace("T", " ") if rx["created_at"] else "Recently"
             pat = rx["patient_name"] or "Prescription"
