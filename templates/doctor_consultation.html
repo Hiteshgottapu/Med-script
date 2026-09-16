@@ -1,30 +1,127 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% block title %}Consultations{% endblock %}
 {% block page_title %}Consultations{% endblock %}
 
 {% block extra_css %}
 <style>
-.consult-layout { display: grid; grid-template-columns: 400px 1fr; gap: 0; min-height: calc(100vh - 64px); }
+.consult-layout { display: grid; grid-template-columns: 380px 1fr; gap: 0; min-height: calc(100vh - 64px); background: var(--surface-bg); }
 .consult-form-panel { border-right: var(--border); padding: 32px 28px; overflow-y: auto; background: var(--surface-0); }
-.consult-results-panel { padding: 32px; overflow-y: auto; background: var(--surface-bg); }
+.consult-results-panel { padding: 32px 36px; overflow-y: auto; background: var(--surface-bg); }
 
-.panel-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
-.panel-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; line-height: 1.6; }
+.panel-title { font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+.panel-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.6; }
+
+/* Category chips */
+.spec-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--radius-pill, 9999px);
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--surface-1);
+    color: var(--text-secondary);
+    border: 1px solid var(--surface-2);
+    cursor: pointer;
+    transition: all var(--transition, 180ms ease);
+    text-decoration: none;
+}
+.spec-chip:hover, .spec-chip.active {
+    background: var(--accent-light, #EFF6FF);
+    color: var(--accent, #1B6CA8);
+    border-color: var(--accent-border, #BFDBFE);
+    transform: translateY(-1px);
+}
 
 /* Doctor cards */
 .doctor-grid { display: flex; flex-direction: column; gap: 16px; }
-.doctor-card { background: var(--surface-0); border: var(--border); border-radius: var(--radius-lg); padding: 20px; display: flex; gap: 16px; transition: box-shadow var(--transition), border-color var(--transition); }
-.doctor-card:hover { box-shadow: var(--shadow-md); border-color: var(--accent-border); }
-.doctor-avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 22px; color: white; flex-shrink: 0; }
-.doctor-info { flex: 1; }
-.doctor-name { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
-.doctor-specialty { font-size: 13px; color: var(--accent); font-weight: 500; margin-bottom: 6px; }
-.doctor-hospital { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
-.doctor-rating { display: flex; align-items: center; gap: 4px; }
-.star-icon { color: #F59E0B; font-size: 13px; }
-.rating-value { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-.rating-count { font-size: 12px; color: var(--text-muted); }
-.doctor-actions { display: flex; align-items: flex-start; }
+.doctor-card { 
+    background: var(--surface-0); 
+    border: var(--border); 
+    border-radius: var(--radius-xl, 18px); 
+    padding: 22px 24px; 
+    display: flex; 
+    gap: 20px; 
+    align-items: flex-start;
+    transition: all var(--transition, 180ms ease); 
+    box-shadow: var(--shadow-sm);
+}
+.doctor-card:hover { 
+    box-shadow: var(--shadow-md); 
+    border-color: var(--accent-border, #BFDBFE); 
+    transform: translateY(-2px);
+}
+.doctor-avatar { 
+    width: 60px; 
+    height: 60px; 
+    border-radius: 16px; 
+    background: linear-gradient(135deg, var(--accent, #1B6CA8), #0284C7); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 24px; 
+    color: white; 
+    flex-shrink: 0; 
+    box-shadow: 0 4px 12px rgba(27, 108, 168, 0.25);
+}
+.doctor-info { flex: 1; min-width: 0; }
+.doctor-header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; flex-wrap: wrap; }
+.doctor-name { font-family: 'Outfit', sans-serif; font-size: 17px; font-weight: 700; color: var(--text-primary); }
+.doctor-specialty { font-size: 13.5px; color: var(--accent, #1B6CA8); font-weight: 600; margin-bottom: 6px; }
+.doctor-hospital { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+
+.doctor-meta-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+.doc-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: var(--surface-1);
+    color: var(--text-secondary);
+    border: 1px solid var(--surface-2);
+}
+
+.doctor-rating { display: inline-flex; align-items: center; gap: 4px; }
+.star-icon { color: #F59E0B; font-size: 12.5px; }
+.rating-value { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.rating-count { font-size: 11.5px; color: var(--text-muted); }
+
+.doctor-footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 14px;
+    border-top: 1px solid var(--surface-2);
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.doctor-fee {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+.doctor-fee span {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+.doctor-slot {
+    font-size: 12px;
+    color: #059669;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
 
 /* Empty states */
 .no-doctors { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 60px 24px; }
@@ -35,6 +132,7 @@
 @media (max-width: 1024px) {
     .consult-layout { grid-template-columns: 1fr; }
     .consult-form-panel { border-right: none; border-bottom: var(--border); }
+    .doctor-card { flex-direction: column; }
 }
 </style>
 {% endblock %}
@@ -43,48 +141,53 @@
 <div class="consult-layout">
     <!-- LEFT: Form -->
     <div class="consult-form-panel">
-        <div class="panel-title">Find a Doctor</div>
-        <div class="panel-desc">Describe your symptoms and we'll match you with the most suitable specialist doctors in your area.</div>
+        <div class="panel-title">Find Clinical Specialists</div>
+        <div class="panel-desc">Search by symptoms, specialty, or hospital to match with verified doctors across top medical centers.</div>
 
-        <form action="{{ url_for('doctor_consultation') }}" method="post" id="doctorForm">
+        <form action="{{ url_for('doctor.doctor_consultation') }}" method="post" id="doctorForm">
             <div class="form-group">
-                <label class="form-label" for="name">Full Name</label>
+                <label class="form-label" for="name">Patient Full Name</label>
                 <div class="input-with-icon">
                     <i class="fas fa-user input-icon"></i>
-                    <input type="text" class="form-input" id="name" name="name" placeholder="Your name" value="{{ name or '' }}" required>
+                    <input type="text" class="form-input" id="name" name="name" placeholder="e.g. Hitesh Gottapu" value="{{ name or '' }}" required>
                 </div>
             </div>
 
-            <div class="form-row">
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label class="form-label" for="age">Age</label>
-                    <input type="number" class="form-input" id="age" name="age" placeholder="Age" value="{{ age or '' }}" min="1" max="120" required>
+                    <input type="number" class="form-input" id="age" name="age" placeholder="23" value="{{ age or '' }}" min="1" max="120" required>
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
-                    <label class="form-label" for="email">Email</label>
+                    <label class="form-label" for="email">Email Address</label>
                     <div class="input-with-icon">
                         <i class="fas fa-envelope input-icon"></i>
-                        <input type="email" class="form-input" id="email" name="email" placeholder="Email" value="{{ email or '' }}" required>
+                        <input type="email" class="form-input" id="email" name="email" placeholder="name@email.com" value="{{ email or '' }}" required>
                     </div>
                 </div>
             </div>
 
             <div class="form-group" style="margin-top: 16px;">
-                <label class="form-label" for="symptoms">Describe Your Symptoms</label>
-                <textarea class="form-textarea" id="symptoms" name="symptoms" placeholder="Describe your symptoms in detail..." rows="4" required>{{ symptoms or '' }}</textarea>
+                <label class="form-label" for="symptoms">Symptoms or Specialty</label>
+                <textarea class="form-textarea" id="symptoms" name="symptoms" placeholder="e.g. Pulmonologist, persistent cough, chest congestion, asthma..." rows="3" required>{{ symptoms or '' }}</textarea>
+                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Enter your health symptoms or desired doctor department</div>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-block btn-lg" id="findBtn">
-                <i class="fas fa-search"></i> Find Doctors
+            <button type="submit" class="btn btn-primary btn-block btn-lg" id="findBtn" style="width: 100%; margin-top: 12px;">
+                <i class="fas fa-search"></i> Find Available Doctors
             </button>
         </form>
 
         <div style="margin-top: 28px; padding-top: 24px; border-top: var(--border);">
-            <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px;">Specialist Categories</div>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                {% set specs = ['Cardiologist', 'Dermatologist', 'Neurologist', 'Orthopedist', 'Pulmonologist', 'Gastroenterologist'] %}
+            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 12px;">
+                Browse by Specialty
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                {% set specs = ['Pulmonologist', 'Cardiologist', 'Dermatologist', 'Neurologist', 'Orthopedist', 'General Physician', 'Gastroenterologist'] %}
                 {% for s in specs %}
-                <span class="badge badge-neutral" style="cursor: pointer; padding: 4px 10px; font-size: 12px;" onclick="addToSymptoms('{{ s }}')">{{ s }}</span>
+                <button type="button" class="spec-chip" onclick="searchBySpec('{{ s }}')">
+                    <i class="fas fa-stethoscope" style="font-size: 11px;"></i> {{ s }}
+                </button>
                 {% endfor %}
             </div>
         </div>
@@ -93,9 +196,20 @@
     <!-- RIGHT: Results -->
     <div class="consult-results-panel">
         {% if doctors %}
-        <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
-            <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);">{{ doctors|length }} Doctors Found</div>
-            <span class="badge badge-success">Available</span>
+        <div style="margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <div>
+                <div style="font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 800; color: var(--text-primary);">
+                    {{ doctors|length }} Specialist Doctors Available
+                </div>
+                <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">
+                    Verified clinical practitioners with immediate consultation slots
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <span class="badge badge-success" style="padding: 6px 12px; font-weight: 700; font-size: 12px;">
+                    <i class="fas fa-clock"></i> Accepting Appointments
+                </span>
+            </div>
         </div>
 
         <div class="doctor-grid">
@@ -105,31 +219,50 @@
                     <i class="fas fa-user-md"></i>
                 </div>
                 <div class="doctor-info">
-                    <div class="doctor-name">{{ doctor.name }}</div>
+                    <div class="doctor-header-row">
+                        <div class="doctor-name">{{ doctor.name }}</div>
+                        <div class="doctor-rating">
+                            {% set rating = doctor.rating|float %}
+                            {% for i in range(5) %}
+                                {% if i < rating|int %}
+                                <i class="fas fa-star star-icon"></i>
+                                {% elif i < rating %}
+                                <i class="fas fa-star-half-alt star-icon"></i>
+                                {% else %}
+                                <i class="far fa-star star-icon" style="color: var(--surface-3);"></i>
+                                {% endif %}
+                            {% endfor %}
+                            <span class="rating-value">{{ doctor.rating }}</span>
+                            <span class="rating-count">/ 5.0</span>
+                        </div>
+                    </div>
+
                     <div class="doctor-specialty">{{ doctor.specialization }}</div>
                     <div class="doctor-hospital">
-                        <i class="fas fa-hospital-alt"></i>
-                        {{ doctor.hospital }}
+                        <i class="fas fa-hospital-alt" style="color: var(--accent);"></i>
+                        <span>{{ doctor.hospital }}</span>
                     </div>
-                    <div class="doctor-rating">
-                        {% set rating = doctor.rating|float %}
-                        {% for i in range(5) %}
-                            {% if i < rating|int %}
-                            <i class="fas fa-star star-icon"></i>
-                            {% elif i < rating %}
-                            <i class="fas fa-star-half-alt star-icon"></i>
-                            {% else %}
-                            <i class="far fa-star star-icon" style="color: var(--surface-3);"></i>
-                            {% endif %}
-                        {% endfor %}
-                        <span class="rating-value">{{ doctor.rating }}</span>
-                        <span class="rating-count">/ 5.0</span>
+
+                    <div class="doctor-meta-pills">
+                        <span class="doc-pill"><i class="fas fa-briefcase-medical"></i> {{ doctor.experience }}</span>
+                        <span class="doc-pill"><i class="fas fa-video"></i> {{ doctor.consult_type or 'Video & In-Clinic' }}</span>
                     </div>
-                </div>
-                <div class="doctor-actions">
-                    <button type="button" class="btn btn-primary btn-sm" onclick="openApptModal('{{ doctor.name }}', '{{ doctor.email }}')">
-                        <i class="fas fa-calendar-plus"></i> Book
-                    </button>
+
+                    <div class="doctor-footer-row">
+                        <div style="display: flex; align-items: center; gap: 16px;">
+                            <div class="doctor-fee">{{ doctor.fee or '₹800' }} <span>/ consultation</span></div>
+                            <div class="doctor-slot">
+                                <i class="fas fa-calendar-check"></i>
+                                <span>Next: {{ doctor.available_time or 'Today, 4:30 PM' }}</span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="openApptModal('{{ doctor.name }}', '{{ doctor.email }}')">
+                                <i class="fas fa-calendar-plus"></i> Book Appointment
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
             {% endfor %}
@@ -218,6 +351,12 @@ function addToSymptoms(text) {
     const ta = document.getElementById('symptoms');
     ta.value = ta.value ? ta.value + ', ' + text : text;
     ta.focus();
+}
+
+function searchBySpec(spec) {
+    const ta = document.getElementById('symptoms');
+    ta.value = spec;
+    document.getElementById('doctorForm').submit();
 }
 
 document.getElementById('doctorForm').addEventListener('submit', function() {
