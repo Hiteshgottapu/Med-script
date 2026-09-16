@@ -128,6 +128,7 @@ def medscript():
                 "medscript.html",
                 text=extracted_text,
                 parsed_data=parsed_data,
+                parsed_rx=parsed_data,
                 recent_prescriptions=recent_prescriptions
             )
     return render_template("medscript.html", recent_prescriptions=recent_prescriptions)

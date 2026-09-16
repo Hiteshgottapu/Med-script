@@ -56,52 +56,53 @@ def extract_text_from_image(file):
         api_key = config.GEMINI_API_KEY or config.GOOGLE_API_KEY
         if api_key:
             prompt = (
-                "You are an expert clinical pharmacist and medical OCR specialist.\n"
-                "Transcribe and parse all handwritten and printed medical details from this prescription image into a clean, valid JSON object.\n\n"
+                "You are an expert clinical pharmacist and medical OCR specialist specializing in deciphering handwritten hospital outpatient (OPD) prescription slips, doctor notes, and cursive medical handwriting.\n"
+                "Carefully examine this prescription image (including printed hospital headers, registration/OPD numbers, patient demographics, clinical notes, and handwritten medicines with dosages/frequencies/durations).\n\n"
+                "Decipher all handwritten cursive text, medical abbreviations (e.g., OD, BD, TDS, QID, SOS, HS, AC, PC, 1-0-1, 1-0-0, 0-0-1), and pharmaceutical brand/generic names accurately.\n\n"
                 "Output ONLY valid JSON matching this schema:\n"
                 "{\n"
                 '  "doctor": {\n'
                 '    "name": "Doctor name or null",\n'
-                '    "specialty": "Specialty/degree (e.g. MD, MBBS) or null",\n'
-                '    "clinic": "Clinic or hospital name or null",\n'
+                '    "specialty": "Specialty/department (e.g. Chest Diseases, Pulmonology, General Medicine) or null",\n'
+                '    "clinic": "Hospital or clinic name (e.g. Chest Diseases Hospital, Govt Medical College) or null",\n'
                 '    "phone": "Phone number or null",\n'
-                '    "reg_no": "Registration/License number or null"\n'
+                '    "reg_no": "Registration/OPD number or null"\n'
                 "  },\n"
                 '  "patient": {\n'
                 '    "name": "Patient name or null",\n'
                 '    "age": "Age or null",\n'
                 '    "gender": "Male / Female or null",\n'
-                '    "date": "Date of prescription or null",\n'
+                '    "date": "Date of prescription (DD-MM-YYYY or similar) or null",\n'
                 '    "allergies": "Known allergies or null"\n'
                 "  },\n"
                 '  "clinical": {\n'
-                '    "diagnosis": "Primary diagnosis / condition or null",\n'
+                '    "diagnosis": "Primary diagnosis / condition (e.g. COPD, Bronchitis, Asthma, RTI) or null",\n'
                 '    "symptoms": "Symptoms or chief complaints or null",\n'
-                '    "notes": "Clinical notes or null"\n'
+                '    "notes": "Clinical notes / vital signs / examination findings or null"\n'
                 "  },\n"
                 '  "medicines": [\n'
                 "    {\n"
-                '      "name": "Medicine brand/generic name",\n'
-                '      "strength": "Strength (e.g. 625mg, 10mg, 500mg) or empty",\n'
-                '      "form": "Tablet / Capsule / Syrup / Inhaler / Injection / Drops / Ointment",\n'
-                '      "dose": "Dosage (e.g. 1 tablet, 5ml, 2 puffs)",\n'
-                '      "frequency": "Frequency (e.g. Twice daily, Once daily, 1-0-1, TDS, SOS)",\n'
-                '      "duration": "Duration (e.g. 5 days, 1 week, 30 days)",\n'
-                '      "timing": "Timing (e.g. After food, Before food, At bedtime, With meals)",\n'
+                '      "name": "Medicine brand or generic name",\n'
+                '      "strength": "Strength (e.g. 500mg, 400mcg, 100mg) or empty",\n'
+                '      "form": "Tablet / Capsule / Syrup / Inhaler / Injection / Respules / Nebulizer / Drops / Ointment",\n'
+                '      "dose": "Dosage (e.g. 1 tab, 1 cap, 2 puffs, 5ml)",\n'
+                '      "frequency": "Frequency (e.g. Once daily (1-0-0), Twice daily (1-0-1), Thrice daily (1-1-1), SOS)",\n'
+                '      "duration": "Duration (e.g. 5 days, 7 days, 1 month, 15 days)",\n'
+                '      "timing": "Timing (e.g. After food / PC, Before food / AC, At bedtime / HS, With meals)",\n'
                 '      "instructions": "Specific administration advice or warnings"\n'
                 "    }\n"
                 "  ],\n"
                 '  "instructions": {\n'
-                '    "general": "General health / care advice or null",\n'
-                '    "diet": "Dietary advice or null",\n'
-                '    "follow_up": "Follow-up consultation advice or null"\n'
+                '    "general": "General health / care advice / precautions",\n'
+                '    "diet": "Dietary advice or precautions",\n'
+                '    "follow_up": "Follow-up consultation advice or review date"\n'
                 "  },\n"
                 '  "raw_transcript": "Clean human-readable formatted clinical summary of the prescription"\n'
                 "}\n\n"
                 "Do NOT wrap with commentary, return only the JSON block."
             )
 
-            models = [config.GEMINI_MODEL, "gemini-3.8-flash", "gemini-3.7-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+            models = [config.GEMINI_MODEL, "gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-flash-latest", "gemini-2.5-pro"]
             for model_name in models:
                 try:
                     api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"

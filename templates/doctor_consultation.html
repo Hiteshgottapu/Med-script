@@ -28,9 +28,9 @@
     text-decoration: none;
 }
 .spec-chip:hover, .spec-chip.active {
-    background: var(--accent-light, #EFF6FF);
-    color: var(--accent, #1B6CA8);
-    border-color: var(--accent-border, #BFDBFE);
+    background: rgba(14, 165, 233, 0.15);
+    color: #38BDF8;
+    border-color: rgba(14, 165, 233, 0.35);
     transform: translateY(-1px);
 }
 
@@ -46,29 +46,30 @@
     align-items: flex-start;
     transition: all var(--transition, 180ms ease); 
     box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(16px);
 }
 .doctor-card:hover { 
     box-shadow: var(--shadow-md); 
-    border-color: var(--accent-border, #BFDBFE); 
+    border-color: rgba(14, 165, 233, 0.35); 
     transform: translateY(-2px);
 }
 .doctor-avatar { 
     width: 60px; 
     height: 60px; 
     border-radius: 16px; 
-    background: linear-gradient(135deg, var(--accent, #1B6CA8), #0284C7); 
+    background: linear-gradient(135deg, #0EA5E9, #0D9488); 
     display: flex; 
     align-items: center; 
     justify-content: center; 
     font-size: 24px; 
     color: white; 
     flex-shrink: 0; 
-    box-shadow: 0 4px 12px rgba(27, 108, 168, 0.25);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.35);
 }
 .doctor-info { flex: 1; min-width: 0; }
 .doctor-header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; flex-wrap: wrap; }
 .doctor-name { font-family: 'Outfit', sans-serif; font-size: 17px; font-weight: 700; color: var(--text-primary); }
-.doctor-specialty { font-size: 13.5px; color: var(--accent, #1B6CA8); font-weight: 600; margin-bottom: 6px; }
+.doctor-specialty { font-size: 13.5px; color: #38BDF8; font-weight: 600; margin-bottom: 6px; }
 .doctor-hospital { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
 
 .doctor-meta-pills {

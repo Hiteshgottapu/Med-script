@@ -32,7 +32,7 @@ class BaseConfig:
     # Google AI / Gemini Configuration
     GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", os.getenv("GOOGLE_API_KEY", ""))
-    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.7-flash")
+    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
     
     # Medical Diagnostic Credentials (Optional)
     INFERMEDICA_APP_ID = os.getenv("INFERMEDICA_APP_ID", "")
