@@ -282,7 +282,7 @@ def check_session():
     user = session.get('user')
     if user and user.get('uid'):
         return jsonify({'logged_in': True, 'email': user.get('email')})
-    return jsonify({'logged_in': False}), 401
+    return jsonify({'logged_in': False}), 200
 
 
 @auth_bp.route('/auth/action', methods=['GET'])

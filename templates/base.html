@@ -405,20 +405,24 @@ function dismissToast(toast) {
 
 // ===== COMMAND PALETTE =====
 function openCommandPalette() {
-    document.getElementById('commandOverlay').classList.add('active');
-    setTimeout(() => document.getElementById('commandInput').focus(), 50);
+    const overlay = document.getElementById('commandOverlay');
+    const input = document.getElementById('commandInput');
+    if (!overlay || !input) return;
+    overlay.classList.add('active');
+    setTimeout(() => input.focus(), 50);
 }
 
 function closeCommandPalette() {
-    document.getElementById('commandOverlay').classList.remove('active');
-    document.getElementById('commandInput').value = '';
+    const overlay = document.getElementById('commandOverlay');
+    const input = document.getElementById('commandInput');
+    if (overlay) overlay.classList.remove('active');
+    if (input) input.value = '';
     filterCommand('');
 }
 
 function filterCommand(query) {
     const items = document.querySelectorAll('.command-result-item');
-    const labels = document.querySelectorAll('.command-group-label');
-    query = query.toLowerCase().trim();
+    query = (query || '').toLowerCase().trim();
     items.forEach(item => {
         const label = item.querySelector('.command-result-label')?.textContent.toLowerCase() || '';
         const desc = item.querySelector('.command-result-desc')?.textContent.toLowerCase() || '';
@@ -426,9 +430,33 @@ function filterCommand(query) {
     });
 }
 
-document.getElementById('commandInput').addEventListener('input', function() {
-    filterCommand(this.value);
-});
+const cmdInput = document.getElementById('commandInput');
+if (cmdInput) {
+    cmdInput.addEventListener('input', function() {
+        filterCommand(this.value);
+    });
+
+    // Keyboard navigation in command palette
+    cmdInput.addEventListener('keydown', function(e) {
+        const items = [...document.querySelectorAll('.command-result-item')].filter(i => i.style.display !== 'none');
+        const selected = document.querySelector('.command-result-item.selected');
+        let idx = items.indexOf(selected);
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (selected) selected.classList.remove('selected');
+            const next = items[Math.min(idx + 1, items.length - 1)];
+            if (next) { next.classList.add('selected'); next.scrollIntoView({ block: 'nearest' }); }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (selected) selected.classList.remove('selected');
+            const prev = items[Math.max(idx - 1, 0)];
+            if (prev) { prev.classList.add('selected'); prev.scrollIntoView({ block: 'nearest' }); }
+        } else if (e.key === 'Enter' && selected) {
+            e.preventDefault();
+            selected.click();
+        }
+    });
+}
 
 // Keyboard shortcuts
 document.addEventListener('keydown', function(e) {
@@ -438,27 +466,6 @@ document.addEventListener('keydown', function(e) {
     }
     if (e.key === 'Escape') {
         closeCommandPalette();
-    }
-});
-
-// Keyboard navigation in command palette
-document.getElementById('commandInput').addEventListener('keydown', function(e) {
-    const items = [...document.querySelectorAll('.command-result-item')].filter(i => i.style.display !== 'none');
-    const selected = document.querySelector('.command-result-item.selected');
-    let idx = items.indexOf(selected);
-    if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        if (selected) selected.classList.remove('selected');
-        const next = items[Math.min(idx + 1, items.length - 1)];
-        if (next) { next.classList.add('selected'); next.scrollIntoView({ block: 'nearest' }); }
-    } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        if (selected) selected.classList.remove('selected');
-        const prev = items[Math.max(idx - 1, 0)];
-        if (prev) { prev.classList.add('selected'); prev.scrollIntoView({ block: 'nearest' }); }
-    } else if (e.key === 'Enter' && selected) {
-        e.preventDefault();
-        selected.click();
     }
 });
 
